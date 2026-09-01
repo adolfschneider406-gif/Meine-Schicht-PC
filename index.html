@@ -800,16 +800,21 @@ input::placeholder{color:#6f8798}
 </div></section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
 </div><script>
-const KEY='meine_schicht_v3';const RANGIER_KEY='meine_schicht_aktiver_rangier_v1';let role='';let planWeekOffset=0;
-function getActiveRangier(){try{return JSON.parse(localStorage.getItem(RANGIER_KEY)||'null')}catch(e){return null}}
-function setActiveRangier(x){if(x)localStorage.setItem(RANGIER_KEY,JSON.stringify(x));else localStorage.removeItem(RANGIER_KEY)}
-const get=()=>{try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}};const save=d=>localStorage.setItem(KEY,JSON.stringify(d));const pad=n=>String(n).padStart(2,'0');
+const DB_NAME='MeineSchichtDB_DEV';const DB_VERSION=1;let dbPromise=null;const EVENTS_STORE='events',PLANS_STORE='plans',SETTINGS_STORE='settings',RANGIER_STORE='activeRangier';let role='';let planWeekOffset=0;
+function openDB(){if(dbPromise)return dbPromise;dbPromise=new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(EVENTS_STORE)){const st=db.createObjectStore(EVENTS_STORE,{keyPath:'id',autoIncrement:true});st.createIndex('date','date');st.createIndex('type','type');st.createIndex('role','role')}if(!db.objectStoreNames.contains(PLANS_STORE)){const st=db.createObjectStore(PLANS_STORE,{keyPath:'id',autoIncrement:true});st.createIndex('date','date');st.createIndex('role','role')}if(!db.objectStoreNames.contains(SETTINGS_STORE))db.createObjectStore(SETTINGS_STORE,{keyPath:'id'});if(!db.objectStoreNames.contains(RANGIER_STORE))db.createObjectStore(RANGIER_STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});return dbPromise}
+function idbAll(store){return openDB().then(db=>new Promise((resolve,reject)=>{const r=db.transaction(store,'readonly').objectStore(store).getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)}))}
+function idbPut(store,obj){return openDB().then(db=>new Promise((resolve,reject)=>{const r=db.transaction(store,'readwrite').objectStore(store).put(obj);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)}))}
+function idbDelete(store,key){return openDB().then(db=>new Promise((resolve,reject)=>{const r=db.transaction(store,'readwrite').objectStore(store).delete(key);r.onsuccess=()=>resolve();r.onerror=()=>reject(r.error)}))}
+let __data=[];let __settings={};let __activeRangier=null;const get=()=>__data;const save=d=>{__data=d;return Promise.all(d.map(x=>idbPut(x.kind==='plan'?PLANS_STORE:EVENTS_STORE,x)))};
+function getActiveRangier(){return __activeRangier}function setActiveRangier(x){__activeRangier=x||null;return x?idbPut(RANGIER_STORE,{id:'current',...x}):idbDelete(RANGIER_STORE,'current')}
+async function loadDevDB(){const [events,plans,settings,rangier]=await Promise.all([idbAll(EVENTS_STORE),idbAll(PLANS_STORE),idbAll(SETTINGS_STORE),idbAll(RANGIER_STORE)]);__data=[...events,...plans];__settings=settings.find(x=>x.id==='personal')||{};__activeRangier=rangier.find(x=>x.id==='current')||null}
+openDB().then(loadDevDB).catch(e=>console.error('IndexedDB',e));const pad=n=>String(n).padStart(2,'0');
 function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`,time:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}}
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
 function show(id){['home','plan','role','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();render()}
-const SETTINGS_KEY='meine_schicht_stammdaten';
-function getSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')}catch(e){return{}}}
+const SETTINGS_KEY='personal';
+function getSettings(){return __settings}
 function openSettings(){loadSettings();show('settings')}
 function loadSettings(){
  let s=getSettings();
@@ -819,14 +824,15 @@ function loadSettings(){
  document.getElementById('setHauptwohnung').value=s.hauptwohnung||'';
  document.getElementById('setZweiteWohnung').value=s.zweiteWohnung||'';
 }
-function saveSettings(){
- localStorage.setItem(SETTINGS_KEY,JSON.stringify({
+async function saveSettings(){
+ __settings={id:SETTINGS_KEY,
    employer:document.getElementById('setEmployer').value.trim(),
    name:document.getElementById('setName').value.trim(),
    personal:document.getElementById('setPersonal').value.trim(),
    hauptwohnung:document.getElementById('setHauptwohnung').value.trim(),
    zweiteWohnung:document.getElementById('setZweiteWohnung').value.trim()
- }));
+ };
+ await idbPut(SETTINGS_STORE,__settings);
  alert('Persönliche Daten und Wohnorte gespeichert.');
 }
 function add(type,extra={}){let n=now(),d=get();d.push({kind:'event',date:n.date,time:n.time,type,role,...extra});save(d);render();renderRole()}
@@ -1076,7 +1082,8 @@ function getShiftEvents(){
 }
 function clearAllData(){
  if(!confirm('Alle gespeicherten Schichtdaten wirklich löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.'))return;
- localStorage.removeItem(KEY);
+ __data=[];
+ Promise.all([idbAll(EVENTS_STORE),idbAll(PLANS_STORE)]).then(([events,plans])=>Promise.all([...events.map(x=>idbDelete(EVENTS_STORE,x.id)),...plans.map(x=>idbDelete(PLANS_STORE,x.id))]));
  setActiveRangier(null);
  render();
 }
