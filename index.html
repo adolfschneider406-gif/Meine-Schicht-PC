@@ -1071,11 +1071,19 @@ function continueMove(){
 function repeatNf(){
  let active=getActiveRangier();
  if(!active)return alert('Kein aktiver Nf-Rangiervorgang.');
+ let choice=prompt('🔁 Rangieren wiederholen\n\n1 = Gleiche Strecke\n2 = Neue Strecke','1');
+ if(choice===null)return;
  let von=active.nach;
- let defaultTarget=active.von;
- let target=prompt('🔁 Rangieren wiederholen\n\nVon: '+von+'\nNeuer Rangierweg / Ziel eingeben.\nDer vorherige Gegenpunkt ist als Vorschlag eingetragen.',''+defaultTarget);
- if(target===null||!target.trim())return;
- target=target.trim();
+ let target;
+ if(choice==='1'){
+   target=active.von;
+ }else if(choice==='2'){
+   target=prompt('Neue Strecke / neues Ziel\n\nVon: '+von+'\nNach / Ziel (KM, Gleis, Signal oder Ort):','');
+   if(target===null||!target.trim())return;
+   target=target.trim();
+ }else{
+   return;
+ }
  let next={von:von,nach:target,rangierobjekt:'Nf',rangierweg:target,startedAt:active.startedAt};
  add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
  setActiveRangier(next);
