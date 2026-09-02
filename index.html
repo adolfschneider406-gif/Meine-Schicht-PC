@@ -893,7 +893,7 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  if(active){
    let mode=active.rangierobjekt||'Tfz';
    r=mode==='Nf'
-    ? '<button class="small" onclick="repeatNf()">🔁 Rangieren wiederholen</button><button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>'
+    ? '<button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>'
     : '<button class="small" onclick="continueMove()">▶️ Weiter</button><button class="small" onclick="changeDirection()">🔄 Richtungswechsel</button><button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>';
  }else{
    r='<button class="small" onclick="moveTfz()">🚂 Rangieren Tfz</button><button class="small" onclick="moveNf()">🚃 Rangieren Nf</button>';
@@ -916,7 +916,8 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  if(active){
    let mode=active.rangierobjekt||'Tfz';
    let info=mode==='Nf'?'Nf':'Tfz · '+(active.fahrart||'');
-   e.innerHTML+='<div class="item"><b>Aktiver Rangiervorgang:</b> '+esc(active.von)+' → '+esc(active.nach)+' · '+esc(info)+'</div>';
+   if(mode==='Nf') e.innerHTML+='<div class="item" onclick="moveNf()" title="Nächste Nf-Rangierfahrt" style="cursor:pointer"><b>Aktiver Rangiervorgang:</b> '+esc(active.von)+' → '+esc(active.nach)+' · '+esc(info)+'</div>';
+   else e.innerHTML+='<div class="item"><b>Aktiver Rangiervorgang:</b> '+esc(active.von)+' → '+esc(active.nach)+' · '+esc(info)+'</div>';
  }
  renderEvents()}
 }
@@ -997,7 +998,6 @@ function moveNf(){
    return alert('Es ist bereits ein Tfz-Rangiervorgang aktiv. Bitte diesen zuerst beenden.');
  }
 
- // Letzte Nf-Strecke ermitteln – auch wenn aktuell kein Nf-Vorgang aktiv ist.
  let lastNf=null;
  if(active && (active.rangierobjekt||'Tfz')==='Nf'){
    lastNf=active;
@@ -1011,8 +1011,8 @@ function moveNf(){
    }
  }
 
- // Wenn bereits eine Nf-Strecke vorhanden ist, direkt hier entscheiden:
- // gleiche letzte Strecke oder neue Strecke.
+ // Sobald eine letzte Nf-Strecke vorhanden ist, direkt zwischen
+ // gleicher Strecke und neuer Strecke wählen.
  if(lastNf){
    let choice=prompt('🚃 Rangieren Nf\n\n1 = 🔁 Rangieren wiederholen – gleiche letzte Strecke\n2 = 🔀 Neue Strecke','1');
    if(choice===null)return;
@@ -1021,15 +1021,28 @@ function moveNf(){
        von:lastNf.nach,
        nach:lastNf.von,
        rangierobjekt:'Nf',
-       rangierweg:lastNf.von,
+       rangierweg:lastNf.rangierweg||lastNf.nach,
        startedAt:active?.startedAt||now()
      };
-     add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
      setActiveRangier(next);
+     add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
      renderRole();
      return;
    }
    if(choice!=='2')return;
+
+   // Bei einem aktiven Nf-Vorgang ist der bisherige Zielpunkt
+   // automatisch der Ausgangspunkt der neuen Strecke.
+   if(active){
+     let target=prompt('Neues Ziel (KM, Gleis, Signal oder Ort):',active.nach);
+     if(target===null||!target.trim())return;
+     target=target.trim();
+     let next={von:active.nach,nach:target,rangierobjekt:'Nf',rangierweg:target,startedAt:active.startedAt};
+     setActiveRangier(next);
+     add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
+     renderRole();
+     return;
+   }
  }
 
  let v=prompt('Von (KM, Gleis, Signal oder Ort):','');
@@ -1105,27 +1118,6 @@ function continueMove(){
  }else return;
  let next={von:start,nach:target,fahrart:active.fahrart,rangierobjekt:'Tfz',startedAt:active.startedAt};
  add('Rangieren',{von:next.von,nach:next.nach,fahrart:next.fahrart,rangierobjekt:'Tfz'});
- setActiveRangier(next);
- renderRole();
-}
-function repeatNf(){
- let active=getActiveRangier();
- if(!active)return alert('Kein aktiver Nf-Rangiervorgang.');
- let choice=prompt('🔁 Rangieren wiederholen\n\n1 = Gleiche Strecke\n2 = Neue Strecke','1');
- if(choice===null)return;
- let von=active.nach;
- let target;
- if(choice==='1'){
-   target=active.von;
- }else if(choice==='2'){
-   target=prompt('Neue Strecke / neues Ziel\n\nVon: '+von+'\nNach / Ziel (KM, Gleis, Signal oder Ort):','');
-   if(target===null||!target.trim())return;
-   target=target.trim();
- }else{
-   return;
- }
- let next={von:von,nach:target,rangierobjekt:'Nf',rangierweg:target,startedAt:active.startedAt};
- add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
  setActiveRangier(next);
  renderRole();
 }
