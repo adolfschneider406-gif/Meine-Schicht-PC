@@ -898,15 +898,17 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  }else{
    r='<button class="small" onclick="moveTfz()">🚂 Rangieren Tfz</button><button class="small" onclick="moveNf()">🚃 Rangieren Nf</button>';
  }
+ let trainButtons=(!active || (active.rangierobjekt||'Tfz')!=='Nf') ?
+  '<button class="small" onclick="startTrainAssembly()">🔄 Zug neu zusammenstellen</button>'+
+  '<button class="small" onclick="add(\'Wagenliste erstellt\')">📋 Wagenliste</button>'+
+  '<button class="small" onclick="add(\'Bremsprobe durchgeführt\')">🛑 Bremsprobe</button>'+
+  '<button class="small" onclick="finishTrainAssembly()">✅ Zug fertig</button>' : '';
  e.innerHTML='<div class="grid">'+r+
  '<button class="small" onclick="holdMove()">⏸ Halten / Warten</button>'+
  '<button class="small" onclick="add(\'Ankuppeln\')">🔗 Ankuppeln</button>'+
  '<button class="small" onclick="add(\'Abkuppeln\')">🔓 Abkuppeln</button>'+
  '<button class="small" onclick="loadUnload()">📦 Laden / Entladen</button>'+
- '<button class="small" onclick="startTrainAssembly()">🔄 Zug neu zusammenstellen</button>'+
- '<button class="small" onclick="add(\'Wagenliste erstellt\')">📋 Wagenliste</button>'+
- '<button class="small" onclick="add(\'Bremsprobe durchgeführt\')">🛑 Bremsprobe</button>'+
- '<button class="small" onclick="finishTrainAssembly()">✅ Zug fertig</button>'+
+ trainButtons+
  '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>'+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
