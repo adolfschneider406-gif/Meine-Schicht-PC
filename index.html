@@ -924,7 +924,9 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  '<button class="small" onclick="add(\'Abkuppeln\')">🔓 Abkuppeln</button>'+
  '<button class="small" onclick="loadUnload()">📦 Laden / Entladen</button>'+
  trainButtons+
- '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>'+
+ ((active && (active.rangierobjekt||'Tfz')==='Nf')
+  ? '<button class="small" onclick="nfParkStatus()">🅿️ Nf Abgestellt / Ausgegleist</button>'
+  : '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>')+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
  '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div>';
@@ -1155,6 +1157,13 @@ function parkVehicle(){
  let gleis=prompt('Gleis:','');
  if(gleis===null||!gleis.trim())return;
  add('Wagen / Lok abgestellt',{detail:'Gleis '+gleis.trim()});
+}
+function nfParkStatus(){
+ let active=getActiveRangier();
+ if(!active || (active.rangierobjekt||'Tfz')!=='Nf')return alert('Kein aktiver Nf-Rangiervorgang.');
+ let v=prompt('Nf Abgestellt / Ausgegleist:\n1 = Abgestellt\n2 = Ausgegleist','1');
+ if(v==='1')add('Nf abgestellt');
+ else if(v==='2')add('Nf ausgegleist');
 }
 function loadUnload(){
  let v=prompt('Laden / Entladen wählen:\n1 = Nur beladen\n2 = Nur entladen\n3 = Beladen + Entladen','3');
