@@ -1295,15 +1295,21 @@ function exportPDF(){
 <div><b>Arbeitgeber:</b> ${esc(s.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(s.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(s.personal||'')}</div>
 <div><b>Auftraggeber:</b> ${esc(p.auftraggeber||'')} &nbsp; <b>Einsatzort:</b> ${esc(p.ort||'')}</div><br>
 <table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button></body></html>`);w.document.close()}
-function clearData(){
+async function clearData(){
  if(!confirm('Erfassungsdaten löschen?\n\nFahrten, Schichtdokumentationen und Tätigkeitsereignisse werden gelöscht.\n\nDeine geplanten Einsätze bleiben erhalten.'))return;
- const plans=get().filter(x=>x.kind==='plan');
- save(plans);
- setActiveRangier(null);
- role='';
- render();
- renderPlans();
- alert('Erfassungsdaten wurden gelöscht. Deine Einsätze bleiben erhalten.');
+ try{
+   const events=await idbAll(EVENTS_STORE);
+   await Promise.all(events.map(x=>idbDelete(EVENTS_STORE,x.id)));
+   __data=__data.filter(x=>x.kind==='plan');
+   await setActiveRangier(null);
+   role='';
+   render();
+   renderPlans();
+   alert('Erfassungsdaten wurden gelöscht. Deine geplanten Einsätze bleiben erhalten.');
+ }catch(e){
+   console.error('Fehler beim Löschen der Erfassungsdaten',e);
+   alert('Die Erfassungsdaten konnten nicht vollständig gelöscht werden.');
+ }
 }
 
 function load(){return get()}
