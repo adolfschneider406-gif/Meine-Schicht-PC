@@ -993,17 +993,50 @@ function moveTfz(){
 }
 function moveNf(){
  let active=getActiveRangier();
+ if(active && (active.rangierobjekt||'Tfz')==='Tfz'){
+   return alert('Es ist bereits ein Tfz-Rangiervorgang aktiv. Bitte diesen zuerst beenden.');
+ }
+
+ // Letzte Nf-Strecke ermitteln – auch wenn aktuell kein Nf-Vorgang aktiv ist.
+ let lastNf=null;
  if(active && (active.rangierobjekt||'Tfz')==='Nf'){
-   let choice=prompt('🚃 Rangieren Nf\n\n1 = Rangieren wiederholen\n2 = Neue Strecke','1');
+   lastNf=active;
+ }else{
+   let d=get();
+   for(let i=d.length-1;i>=0;i--){
+     if(d[i].type==='Rangieren' && d[i].rangierobjekt==='Nf' && d[i].von && d[i].nach){
+       lastNf=d[i];
+       break;
+     }
+   }
+ }
+
+ // Wenn bereits eine Nf-Strecke vorhanden ist, direkt hier entscheiden:
+ // gleiche letzte Strecke oder neue Strecke.
+ if(lastNf){
+   let choice=prompt('🚃 Rangieren Nf\n\n1 = 🔁 Rangieren wiederholen – gleiche letzte Strecke\n2 = 🔀 Neue Strecke','1');
    if(choice===null)return;
-   if(choice==='1'){repeatNf();return;}
+   if(choice==='1'){
+     let next={
+       von:lastNf.nach,
+       nach:lastNf.von,
+       rangierobjekt:'Nf',
+       rangierweg:lastNf.von,
+       startedAt:active?.startedAt||now()
+     };
+     add('Rangieren',{von:next.von,nach:next.nach,rangierobjekt:'Nf',rangierweg:next.rangierweg});
+     setActiveRangier(next);
+     renderRole();
+     return;
+   }
    if(choice!=='2')return;
  }
- let v=active && (active.rangierobjekt||'Tfz')==='Nf' ? active.nach : prompt('Von (KM, Gleis, Signal oder Ort):','');
- if(v===null||!String(v).trim())return;
+
+ let v=prompt('Von (KM, Gleis, Signal oder Ort):','');
+ if(v===null||!v.trim())return;
  let n=prompt('Nach / Rangierweg (KM, Gleis, Signal oder Ort):','');
  if(n===null||!n.trim())return;
- let nf={von:String(v).trim(),nach:n.trim(),rangierobjekt:'Nf',rangierweg:n.trim(),startedAt:active && active.rangierobjekt==='Nf' ? active.startedAt : now()};
+ let nf={von:v.trim(),nach:n.trim(),rangierobjekt:'Nf',rangierweg:n.trim(),startedAt:now()};
  setActiveRangier(nf);
  add('Rangieren',{von:nf.von,nach:nf.nach,rangierobjekt:'Nf',rangierweg:nf.rangierweg});
  renderRole();
