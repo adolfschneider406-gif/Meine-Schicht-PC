@@ -896,7 +896,7 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
     ? '<button class="small" onclick="repeatNf()">🔁 Rangieren wiederholen</button><button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>'
     : '<button class="small" onclick="continueMove()">▶️ Weiter</button><button class="small" onclick="changeDirection()">🔄 Richtungswechsel</button><button class="small danger" onclick="endMove()">⏹ Rangiervorgang beenden</button>';
  }else{
-   r='<button class="small" onclick="moveTfz()">🚂 Rangieren Tfz</button>';
+   r='<button class="small" onclick="moveTfz()">🚂 Rangieren Tfz</button><button class="small" onclick="moveNf()">🚃 Rangieren Nf</button>';
  }
  e.innerHTML='<div class="grid">'+r+
  '<button class="small" onclick="holdMove()">⏸ Halten / Warten</button>'+
