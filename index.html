@@ -1359,6 +1359,11 @@ function exportPDF(){
   let allEvents=get().filter(x=>x.kind==='event');
   if(!allEvents.length)return alert('Noch keine Daten.');
 
+  // Das Fenster muss direkt aus dem Button-Klick heraus geöffnet werden.
+  // Sonst blockiert der Browser es nach der späteren prompt()-Abfrage.
+  let w=window.open('','_blank');
+  if(!w)return alert('Pop-up blockiert.');
+
   const dates=[...new Set(allEvents.map(x=>x.date).filter(Boolean))];
   dates.sort((a,b)=>{
     const pa=a.split('.').reverse().join('-');
@@ -1375,10 +1380,11 @@ function exportPDF(){
       '1'
     );
 
-    if(answer===null)return;
+    if(answer===null){ w.close(); return; }
 
     const n=Number(answer);
     if(!Number.isInteger(n)||n<1||n>dates.length){
+      w.close();
       return alert('Bitte eine gültige Nummer auswählen.');
     }
     selectedDate=dates[n-1];
@@ -1415,9 +1421,6 @@ function exportPDF(){
   }).join('');
 
   const safeDate=selectedDate.replace(/\./g,'-');
-
-  let w=window.open('','_blank');
-  if(!w)return alert('Pop-up blockiert.');
 
   w.document.write(`<html><head><meta charset="utf-8"><title>Meine-Schicht-Tagesbericht-${safeDate}</title><style>
   body{font-family:Arial;margin:20px}
