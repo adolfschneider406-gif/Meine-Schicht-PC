@@ -1240,7 +1240,17 @@ function editPlan(id){
  p.auftraggeber=prompt('Auftraggeber:',p.auftraggeber||'')||'';
  save(d);renderPlans()
 }
-function delPlan(id){if(confirm('Einsatz löschen?')){save(get().filter(x=>x.id!==id));renderPlans()}}
+async function delPlan(id){
+ if(!confirm('Einsatz löschen?'))return;
+ try{
+  await idbDelete(PLANS_STORE,id);
+  __data=__data.filter(x=>!(x.kind==='plan'&&x.id===id));
+  renderPlans();
+ }catch(e){
+  console.error('Einsatz konnte nicht gelöscht werden',e);
+  alert('Der Einsatz konnte nicht gelöscht werden.\n\n'+(e.message||e));
+ }
+}
 let selectedPlanDate='';
 function planWeekInfo(){
  let d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+planWeekOffset*7);
