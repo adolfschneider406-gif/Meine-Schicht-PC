@@ -1359,12 +1359,7 @@ function exportPDF(){
  let allEvents=get().filter(x=>x.kind==='event');
  if(!allEvents.length)return alert('Noch keine Daten.');
 
- // Das neue Fenster SOFORT innerhalb des Klicks öffnen. Erst danach wird der Tag gewählt.
- // So blockiert der Browser das PDF-Fenster nicht als Pop-up.
- let w=window.open('','_blank');
- if(!w)return alert('Pop-up blockiert. Bitte Pop-ups für diese Seite erlauben.');
-
- // Tagesbericht immer nur für EINEN ausgewählten Arbeitstag erzeugen.
+ // Nur Tage mit tatsächlich gespeicherten Ereignissen anbieten.
  const dates=[...new Set(allEvents.map(x=>x.date).filter(Boolean))];
  dates.sort((a,b)=>{
    const pa=a.split('.').reverse().join('-');
@@ -1375,15 +1370,15 @@ function exportPDF(){
  let selectedDate=dates[0];
  if(dates.length>1){
    const list=dates.map((d,i)=>`${i+1}. ${d}`).join('\n');
-   const answer=prompt(`📄 Tagesbericht\n\nFür welchen Tag soll der PDF-Bericht erstellt werden?\n\n${list}\n\nNummer eingeben:`, '1');
-   if(answer===null){w.close();return;}
+   const answer=prompt(`📄 Tagesbericht\n\nFür welchen Tag möchtest du den Tagesbericht ansehen?\n\n${list}\n\nNummer eingeben:`, '1');
+   if(answer===null)return;
    const n=Number(answer);
-   if(!Number.isInteger(n)||n<1||n>dates.length){w.close();return alert('Bitte eine gültige Nummer auswählen.');}
+   if(!Number.isInteger(n)||n<1||n>dates.length)return alert('Bitte eine gültige Nummer auswählen.');
    selectedDate=dates[n-1];
  }
 
  const a=allEvents.filter(x=>x.date===selectedDate);
- if(!a.length){w.close();return alert('Für diesen Tag sind keine Daten vorhanden.');}
+ if(!a.length)return alert('Für diesen Tag sind keine Daten vorhanden.');
 
  let s=getSettings();
  let planByDate={};
@@ -1411,12 +1406,24 @@ function exportPDF(){
  }).join('');
 
  const safeDate=selectedDate.replace(/\./g,'-');
- w.document.write(`<html><head><meta charset="utf-8"><title>Meine-Schicht-Tagesbericht-${safeDate}</title><style>body{font-family:Arial;margin:20px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #aaa;padding:5px;text-align:left}@media print{@page{size:A4 landscape;margin:12mm}button{display:none}}</style></head><body><h1>Meine Schicht – Tagesbericht</h1>
+ const html=`<!doctype html><html><head><meta charset="utf-8"><title>Meine-Schicht-Tagesbericht-${safeDate}</title><style>
+body{font-family:Arial,sans-serif;margin:20px;color:#111}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #aaa;padding:5px;text-align:left}h1{margin-bottom:8px}.actions{margin:18px 0}.actions button{padding:9px 14px;margin-right:8px;cursor:pointer}@media print{@page{size:A4 landscape;margin:12mm}.actions{display:none}}
+</style></head><body><h1>Meine Schicht – Tagesbericht</h1>
 <div><b>Datum:</b> ${esc(selectedDate)}</div>
 <div><b>Arbeitgeber:</b> ${esc(s.employer||'')} &nbsp; <b>Mitarbeiter:</b> ${esc(s.name||'')} &nbsp; <b>Personalnummer:</b> ${esc(s.personal||'')}</div>
 <div><b>Auftraggeber:</b> ${esc(p.auftraggeber||'')} &nbsp; <b>Einsatzort:</b> ${esc(p.ort||'')}</div><br>
-<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br><div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div><br><button onclick="print()">📄 Als PDF speichern</button></body></html>`);
- w.document.close();
+<table><tr><th>Datum</th><th>Zeit</th><th>Tätigkeit</th><th>Ereignis</th><th>Detail</th><th>Von</th><th>Nach</th></tr>${rows}</table><br>
+<div><b>Gefahrene Kilometer am Tag:</b> ${dailyKmTotal(a).toLocaleString("de-DE",{maximumFractionDigits:1})} km</div>
+<div class="actions"><button onclick="window.print()">🖨️ Drucken / als PDF speichern</button><button onclick="window.close()">✖ Schließen</button></div>
+</body></html>`;
+
+ // Bericht als echte Vorschau in einem neuen Tab öffnen, ohne window.open-Popup.
+ const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+ const url=URL.createObjectURL(blob);
+ const link=document.createElement('a');
+ link.href=url;link.target='_blank';link.rel='noopener';
+ document.body.appendChild(link);link.click();link.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
 async function clearData(){
