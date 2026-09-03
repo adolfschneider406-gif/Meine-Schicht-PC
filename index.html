@@ -1359,6 +1359,11 @@ function exportPDF(){
  let allEvents=get().filter(x=>x.kind==='event');
  if(!allEvents.length)return alert('Noch keine Daten.');
 
+ // Das neue Fenster SOFORT innerhalb des Klicks öffnen. Erst danach wird der Tag gewählt.
+ // So blockiert der Browser das PDF-Fenster nicht als Pop-up.
+ let w=window.open('','_blank');
+ if(!w)return alert('Pop-up blockiert. Bitte Pop-ups für diese Seite erlauben.');
+
  // Tagesbericht immer nur für EINEN ausgewählten Arbeitstag erzeugen.
  const dates=[...new Set(allEvents.map(x=>x.date).filter(Boolean))];
  dates.sort((a,b)=>{
@@ -1371,21 +1376,19 @@ function exportPDF(){
  if(dates.length>1){
    const list=dates.map((d,i)=>`${i+1}. ${d}`).join('\n');
    const answer=prompt(`📄 Tagesbericht\n\nFür welchen Tag soll der PDF-Bericht erstellt werden?\n\n${list}\n\nNummer eingeben:`, '1');
-   if(answer===null)return;
+   if(answer===null){w.close();return;}
    const n=Number(answer);
-   if(!Number.isInteger(n)||n<1||n>dates.length)return alert('Bitte eine gültige Nummer auswählen.');
+   if(!Number.isInteger(n)||n<1||n>dates.length){w.close();return alert('Bitte eine gültige Nummer auswählen.');}
    selectedDate=dates[n-1];
  }
 
  const a=allEvents.filter(x=>x.date===selectedDate);
- if(!a.length)return alert('Für diesen Tag sind keine Daten vorhanden.');
+ if(!a.length){w.close();return alert('Für diesen Tag sind keine Daten vorhanden.');}
 
  let s=getSettings();
  let planByDate={};
  get().filter(x=>x.kind==='plan').forEach(p=>{planByDate[p.date]=p});
  let p=planByDate[selectedDate]||{};
- let w=window.open('','_blank');
- if(!w)return alert('Pop-up blockiert.');
 
  let rows=a.map(x=>{
   let detailParts=[];
