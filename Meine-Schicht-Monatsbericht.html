@@ -362,7 +362,11 @@ async function showRows(){
     <span>🚗 ${Number(r[6]||0).toLocaleString('de-DE')} km · Arbeitszeit: ${r[15]!=='' ? Number(r[15]).toLocaleString('de-DE')+' Std.' : '–'}</span>
   </div>`).join('');
 }
-function backToApp(){window.location.assign(USE_DEV_DB?'./index-dev.html':'./index.html')}
+function backToApp(){
+  // PC-Projekt: Die Hauptdatei heißt hier ebenfalls index.html.
+  // Deshalb niemals auf index-dev.html zurückspringen.
+  window.location.assign('./index.html');
+}
 
 function xmlEscape(v){
   return String(v)
