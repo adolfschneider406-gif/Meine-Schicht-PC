@@ -1359,7 +1359,12 @@ function exportPDF(){
  let allEvents=get().filter(x=>x.kind==='event');
  if(!allEvents.length)return alert('Noch keine Daten.');
 
- // Nur Tage mit tatsächlich gespeicherten Ereignissen anbieten.
+ // Das Vorschaufenster wird SOFORT geöffnet, damit der Browser es nicht als Popup blockiert.
+ let w=window.open('','_blank');
+ if(!w)return alert('Pop-up blockiert. Bitte Pop-ups für diese Seite erlauben.');
+ w.document.write('<html><head><meta charset="utf-8"><title>Meine Schicht – Tagesbericht</title></head><body><p>Tagesbericht wird vorbereitet …</p></body></html>');
+ w.document.close();
+
  const dates=[...new Set(allEvents.map(x=>x.date).filter(Boolean))];
  dates.sort((a,b)=>{
    const pa=a.split('.').reverse().join('-');
@@ -1369,16 +1374,16 @@ function exportPDF(){
 
  let selectedDate=dates[0];
  if(dates.length>1){
-   const list=dates.map((d,i)=>`${i+1}. ${d}`).join('\n');
-   const answer=prompt(`📄 Tagesbericht\n\nFür welchen Tag möchtest du den Tagesbericht ansehen?\n\n${list}\n\nNummer eingeben:`, '1');
-   if(answer===null)return;
+   const list=dates.map((d,i)=>`${i+1}. ${d}`).join('\\n');
+   const answer=prompt(`📄 Tagesbericht\\n\\nFür welchen Tag möchtest du den Tagesbericht ansehen?\\n\\n${list}\\n\\nNummer eingeben:`, '1');
+   if(answer===null){w.close();return;}
    const n=Number(answer);
-   if(!Number.isInteger(n)||n<1||n>dates.length)return alert('Bitte eine gültige Nummer auswählen.');
+   if(!Number.isInteger(n)||n<1||n>dates.length){w.close();return alert('Bitte eine gültige Nummer auswählen.');}
    selectedDate=dates[n-1];
  }
 
  const a=allEvents.filter(x=>x.date===selectedDate);
- if(!a.length)return alert('Für diesen Tag sind keine Daten vorhanden.');
+ if(!a.length){w.close();return alert('Für diesen Tag sind keine Daten vorhanden.');}
 
  let s=getSettings();
  let planByDate={};
@@ -1417,13 +1422,9 @@ body{font-family:Arial,sans-serif;margin:20px;color:#111}table{width:100%;border
 <div class="actions"><button onclick="window.print()">🖨️ Drucken / als PDF speichern</button><button onclick="window.close()">✖ Schließen</button></div>
 </body></html>`;
 
- // Bericht als echte Vorschau in einem neuen Tab öffnen, ohne window.open-Popup.
- const blob=new Blob([html],{type:'text/html;charset=utf-8'});
- const url=URL.createObjectURL(blob);
- const link=document.createElement('a');
- link.href=url;link.target='_blank';link.rel='noopener';
- document.body.appendChild(link);link.click();link.remove();
- setTimeout(()=>URL.revokeObjectURL(url),60000);
+ w.document.open();
+ w.document.write(html);
+ w.document.close();
 }
 
 async function clearData(){
