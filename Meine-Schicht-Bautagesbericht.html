@@ -74,7 +74,7 @@ function idbAll(store){
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function mins(t){
- const m=String(t||'').match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
+ const m=String(t||'').match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
  if(!m)return null;
  return Number(m[1])*60+Number(m[2])+Number(m[3]||0)/60;
 }
@@ -84,7 +84,7 @@ function fmtMin(v){
  return String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart(2,'0')+' h';
 }
 function dateObj(s){
- const m=String(s||'').match(/^(\\d{2})\\.(\\d{2})\\.(\\d{4})$/);
+ const m=String(s||'').match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
  return m?new Date(+m[3],+m[2]-1,+m[1]):new Date(0);
 }
 function sortedDay(date){
@@ -111,7 +111,7 @@ function sumWaiting(day){
  for(let i=0;i<day.length;i++){
    if(day[i].type!=='Halten / Warten')continue;
    for(let j=i+1;j<day.length;j++){
-     if(['Rangieren','Rangiervorgang beendet'].includes(day[j].type)){
+     if(['Rangieren','Rangiervorgang beendet','Schichtende','Ankunft / Tagesabschluss'].includes(day[j].type)){
        total+=durationBetween(day[i],day[j]);break;
      }
    }
@@ -119,15 +119,18 @@ function sumWaiting(day){
  return total;
 }
 function sumLoading(day){
- let total=0;
- const stop=['Rangieren','Rangiervorgang beendet','Wagen / Lok abgestellt','Nf abgestellt','Nf ausgegleist','Schichtende','Ankunft / Tagesabschluss'];
+ let total=0, inLoad=false, loadStart=null;
+ const loadTypes=['Nur beladen','Nur entladen','Beladen + Entladen'];
  for(let i=0;i<day.length;i++){
-   if(!['Nur beladen','Nur entladen','Beladen + Entladen'].includes(day[i].type))continue;
-   for(let j=i+1;j<day.length;j++){
-     if(stop.includes(day[j].type)){
-       total+=durationBetween(day[i],day[j]);break;
-     }
-     if(['Nur beladen','Nur entladen','Beladen + Entladen'].includes(day[j].type))break;
+   const e=day[i];
+   if(loadTypes.includes(e.type)){
+     if(!inLoad){ inLoad=true; loadStart=e; }
+     continue;
+   }
+   if(inLoad && ['Rangieren','Rangiervorgang beendet','Wagen / Lok abgestellt','Nf abgestellt','Nf ausgegleist','Schichtende','Ankunft / Tagesabschluss'].includes(e.type)){
+     total+=durationBetween(loadStart,e);
+     inLoad=false;
+     loadStart=null;
    }
  }
  return total;
