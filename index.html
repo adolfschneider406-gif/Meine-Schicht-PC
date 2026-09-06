@@ -488,6 +488,34 @@ input::placeholder{color:#6f8798}
 .small{background:#0b2030!important;color:#fff!important;border:1px solid #1d4b67!important}
 .danger{background:#3a1114!important;border-color:#ff4a45!important}
 .settings{background:#06121d!important}
+
+.report-button-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.data-button-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:8px;
+}
+.report-btn{
+  width:100%!important;
+  min-width:0;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  padding:12px 8px!important;
+  font-size:14px!important;
+  white-space:nowrap;
+}
+@media(max-width:600px){
+  .report-button-grid{gap:6px}
+  .data-button-grid{gap:6px}
+  .report-btn{font-size:13px!important;padding:11px 5px!important}
+}
 .monthly-report-btn{
   width:100%!important;
   margin-top:10px!important;
@@ -788,11 +816,15 @@ input::placeholder{color:#6f8798}
   <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div>
 
   <div class="card settings cockpit-settings">
-    <button class="small" onclick="openSettings()">⚙️ Meine Daten</button>
-    <button class="small" onclick="openDailyReport()">📄 PDF-Bericht</button>
-     <button class="small monthly-report-btn" onclick="openConstructionReport()">🏗️ Bautagesbericht <span>›</span></button>
-    <button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button>
-    <button class="small monthly-report-btn" onclick="openMonthlyReport()">📊 Monatsbericht <span>›</span></button>
+    <div class="report-button-grid">
+      <button class="small report-btn" onclick="openDailyReport()">📄 <span>PDF-Bericht</span></button>
+      <button class="small report-btn" onclick="openConstructionReport()">🏗️ <span>Bautagesbericht</span></button>
+      <button class="small report-btn" onclick="openMonthlyReport()">📊 <span>Monatsbericht</span></button>
+    </div>
+    <div class="data-button-grid">
+      <button class="small report-btn" onclick="openSettings()">⚙️ <span>Meine Daten</span></button>
+      <button class="small report-btn danger" onclick="clearData()">🗑️ <span>Erfassungsdaten löschen</span></button>
+    </div>
   </div>
 
   <nav class="bottom-nav" aria-label="Hauptnavigation">
