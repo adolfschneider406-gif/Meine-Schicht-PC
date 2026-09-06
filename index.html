@@ -966,7 +966,7 @@ async function buepZugmeldung(){
   else {von=fd2;nach=fd1;meldung='Fahrdienst 2 meldet';}
   add('Zugmeldung erhalten',{detail:meldung,von,nach,zugmeldungVon:meldung});
 }
-function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div>';else {
+function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else {
  let active=getActiveRangier();
  let r;
  if(active){
@@ -993,6 +993,8 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
   : '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>')+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
+ '<button class="small" onclick="recordSpecial()">📝 Besonderheiten</button>'+
+ '<button class="small danger" onclick="recordEmergency()">🚨 Notfall</button>'+
  '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div>';
  if(active){
    let mode=active.rangierobjekt||'Tfz';
@@ -1003,6 +1005,36 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
  renderEvents()}
 }
 function detail(t,p){let v=prompt(p+':','');if(v!==null)add(t,{detail:v})}
+
+async function recordSpecial(){
+  let text=prompt('📝 Besonderheit erfassen\n\nWas ist im Bahnbetrieb aktuell wichtig?','');
+  if(text===null||!text.trim())return;
+  add('Besonderheit',{
+    detail:text.trim(),
+    specialText:text.trim()
+  });
+}
+
+async function recordEmergency(){
+  let v=await chooseOption('🚨 Notfall – Art auswählen:',[
+    {value:'nothalt',label:'🛑 Nothaltauftrag'},
+    {value:'notruf',label:'📞 Notruf / Gefahrenmeldung'},
+    {value:'sonstiger',label:'⚠️ Sonstiger Notfall'}
+  ]);
+  if(v===null)return;
+  let labels={
+    nothalt:'Nothaltauftrag abgegeben',
+    notruf:'Notruf / Gefahrenmeldung',
+    sonstiger:'Sonstiger Notfall'
+  };
+  let text=prompt('🚨 '+labels[v]+'\n\nWas ist passiert / was wurde veranlasst?','');
+  if(text===null||!text.trim())return;
+  add('Notfall',{
+    detail:labels[v]+' – '+text.trim(),
+    emergencyType:labels[v],
+    emergencyText:text.trim()
+  });
+}
 function startTrainAssembly(){
  let ok=confirm('🔄 Zug neu zusammenstellen\n\nRangierarbeiten zur Bildung des Zuges beginnen.\n\nWenn die Zugbildung abgeschlossen ist, bitte ✅ Zug fertig drücken.');
  if(!ok)return;
