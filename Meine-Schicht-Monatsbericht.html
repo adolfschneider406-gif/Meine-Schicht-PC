@@ -78,7 +78,9 @@ const USE_DEV_DB=new URLSearchParams(location.search).get('source')==='dev';
 const DEV_DB_NAME='MeineSchichtDB_DEV';
 const DEV_EVENTS_STORE='events';
 const DEV_PLANS_STORE='plans';
+const DEV_SETTINGS_STORE='settings';
 let __reportData=[];
+let __settings={};
 let __reportReady=null;
 
 function get(){return __reportData}
@@ -107,8 +109,13 @@ async function loadReportData(){
   if(USE_DEV_DB){
     const db=await openDevDB();
     try{
-      const [events,plans]=await Promise.all([idbAll(db,DEV_EVENTS_STORE),idbAll(db,DEV_PLANS_STORE)]);
+      const [events,plans,settings]=await Promise.all([
+        idbAll(db,DEV_EVENTS_STORE),
+        idbAll(db,DEV_PLANS_STORE),
+        idbAll(db,DEV_SETTINGS_STORE)
+      ]);
       __reportData=[...events,...plans];
+      __settings=settings[0]||{};
     }finally{db.close();}
   }else{
     try{__reportData=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){__reportData=[]}
@@ -242,13 +249,9 @@ function buildReportRows(){
     const actual=arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0));
     const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
 
-    // Im Monatsbericht steht in Spalte L entweder der Auftraggeber
-    // ODER die Baustelle. Beides wird nicht mehr zusammengeführt.
-    // Beispiel: "BM-Bahndienste" statt "BM-Bahndienste / Wolfratshausen".
-    //
-    // Bei einer Bürofahrt gibt es keinen Auftraggeber. Dann wird statt
-    // "Büro" der tatsächliche Büro-Ort übernommen. Der Ort wird aus den
-    // persönlichen Arbeitgeberdaten abgeleitet (z.B. "... 86916 Kaufering").
+    // Spalte L: Auftraggeber ODER Baustelle, nicht beides zusammen.
+    // Bei einer Bürofahrt wird der tatsächliche Büro-Ort aus den
+    // gespeicherten persönlichen Arbeitgeberdaten übernommen.
     let auftragBaustelle='';
     if(auftrag){
       auftragBaustelle=auftrag;
