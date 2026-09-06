@@ -790,6 +790,7 @@ input::placeholder{color:#6f8798}
   <div class="card settings cockpit-settings">
     <button class="small" onclick="openSettings()">⚙️ Meine Daten</button>
     <button class="small" onclick="openDailyReport()">📄 PDF-Bericht</button>
+     <button class="small monthly-report-btn" onclick="openConstructionReport()">🏗️ Bautagesbericht <span>›</span></button>
     <button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button>
     <button class="small monthly-report-btn" onclick="openMonthlyReport()">📊 Monatsbericht <span>›</span></button>
   </div>
@@ -1715,6 +1716,10 @@ function updateCockpitStatus(){
   let lastRole=start?.role || arr?.role || '';
   document.getElementById('statusRole').textContent=lastRole||'–';
   document.getElementById('statusOrt').textContent='Einsatzort: '+(arr?.ort || '–');
+}
+
+function openConstructionReport(){
+  window.location.href='./Meine-Schicht-Bautagesbericht.html';
 }
 
 function openMonthlyReport(){

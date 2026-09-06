@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Meine Schicht – Bautagesbericht</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#020a12;color:#f5f8fb;font-family:Arial,sans-serif}
+.wrap{max-width:900px;margin:auto;padding:18px}
+.card{background:linear-gradient(180deg,#071a2a,#06121d);border:1px solid #164866;border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 8px 30px #0008}
+button,select{font:inherit}
+button{border:1px solid #245b78;background:#0a2030;color:#fff;border-radius:13px;padding:12px 16px;font-weight:700;cursor:pointer}
+select{width:100%;padding:12px;background:#061522;color:#fff;border:1px solid #24516d;border-radius:10px}
+h1{margin:0 0 8px;font-size:30px}
+h2{margin:0 0 14px;font-size:24px}
+label{display:block;margin:10px 0 6px;font-weight:700}
+.muted{color:#91a6b8}
+.report{background:#fff;color:#111;border-radius:14px;padding:26px}
+.report h1{color:#111}
+.meta{font-size:16px;line-height:1.55;margin-bottom:20px}
+.description{font-size:17px;line-height:1.5;margin:18px 0}
+.times{border-collapse:collapse;width:100%;margin-top:18px}
+.times th,.times td{border:1px solid #bbb;padding:10px;text-align:left}
+.times th{background:#eee}
+.total{font-weight:800}
+.print{margin-top:18px}
+.notice{font-size:12px;color:#667085;margin-top:12px}
+@media print{
+ body{background:#fff}
+ .controls{display:none!important}
+ .wrap{max-width:none;padding:0}
+ .card{border:0;box-shadow:none;padding:0}
+ .report{border-radius:0;padding:0}
+ .notice{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card controls">
+    <button onclick="backToApp()">← Zurück zu Meine Schicht</button>
+    <h1 style="margin-top:16px">🏗️ Bautagesbericht</h1>
+    <div class="muted">Kompakte Zusammenfassung der dokumentierten Schicht.</div>
+    <label for="daySelect">Tag auswählen</label>
+    <select id="daySelect"></select>
+    <button style="margin-top:10px" onclick="renderReport()">Bautagesbericht anzeigen</button>
+  </div>
+
+  <div id="report" class="report">
+    <div class="muted">Noch kein Bericht ausgewählt.</div>
+  </div>
+</div>
+
+<script>
+const DB_NAME='MeineSchichtDB_DEV',DB_VERSION=1,EVENTS_STORE='events';
+let dbPromise=null,events=[];
+
+function openDB(){
+ if(dbPromise)return dbPromise;
+ dbPromise=new Promise((resolve,reject)=>{
+   const r=indexedDB.open(DB_NAME,DB_VERSION);
+   r.onsuccess=()=>resolve(r.result);
+   r.onerror=()=>reject(r.error);
+ });
+ return dbPromise;
+}
+function idbAll(store){
+ return openDB().then(db=>new Promise((resolve,reject)=>{
+   const r=db.transaction(store,'readonly').objectStore(store).getAll();
+   r.onsuccess=()=>resolve(r.result);
+   r.onerror=()=>reject(r.error);
+ }));
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function mins(t){
+ const m=String(t||'').match(/^(\\d{1,2}):(\\d{2})(?::(\\d{2}))?$/);
+ if(!m)return null;
+ return Number(m[1])*60+Number(m[2])+Number(m[3]||0)/60;
+}
+function fmtMin(v){
+ if(v==null || !Number.isFinite(v) || v<=0)return '00:00 h';
+ v=Math.round(v);
+ return String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart(2,'0')+' h';
+}
+function dateObj(s){
+ const m=String(s||'').match(/^(\\d{2})\\.(\\d{2})\\.(\\d{4})$/);
+ return m?new Date(+m[3],+m[2]-1,+m[1]):new Date(0);
+}
+function sortedDay(date){
+ return events.filter(x=>x.kind==='event'&&x.date===date).slice().sort((a,b)=>(mins(a.time)||0)-(mins(b.time)||0));
+}
+function durationBetween(a,b){
+ const x=mins(a?.time),y=mins(b?.time);
+ if(x==null||y==null||y<x)return 0;
+ return y-x;
+}
+function sumRangier(day){
+ let total=0;
+ for(let i=0;i<day.length;i++){
+   if(day[i].type!=='Rangieren')continue;
+   for(let j=i+1;j<day.length;j++){
+     if(day[j].type==='Rangiervorgang beendet'){total+=durationBetween(day[i],day[j]);break}
+     if(day[j].type==='Rangieren'){break}
+   }
+ }
+ return total;
+}
+function sumWaiting(day){
+ let total=0;
+ for(let i=0;i<day.length;i++){
+   if(day[i].type!=='Halten / Warten')continue;
+   for(let j=i+1;j<day.length;j++){
+     if(['Rangieren','Rangiervorgang beendet'].includes(day[j].type)){
+       total+=durationBetween(day[i],day[j]);break;
+     }
+   }
+ }
+ return total;
+}
+function sumLoading(day){
+ let total=0;
+ const stop=['Rangieren','Rangiervorgang beendet','Wagen / Lok abgestellt','Nf abgestellt','Nf ausgegleist','Schichtende','Ankunft / Tagesabschluss'];
+ for(let i=0;i<day.length;i++){
+   if(!['Nur beladen','Nur entladen','Beladen + Entladen'].includes(day[i].type))continue;
+   for(let j=i+1;j<day.length;j++){
+     if(stop.includes(day[j].type)){
+       total+=durationBetween(day[i],day[j]);break;
+     }
+     if(['Nur beladen','Nur entladen','Beladen + Entladen'].includes(day[j].type))break;
+   }
+ }
+ return total;
+}
+function shiftStart(day){
+ return day.find(x=>x.type==='Schichtbeginn') || day.find(x=>x.type==='Sipo Schichtbeginn');
+}
+function shiftEnd(day){
+ for(let i=day.length-1;i>=0;i--)if(['Schichtende','Sipo Schichtende','Ankunft / Tagesabschluss'].includes(day[i].type))return day[i];
+ return null;
+}
+function ortFor(day){
+ const a=day.find(x=>x.type==='Angekommen'&&x.ort);
+ if(a)return a.ort;
+ const plan=day.find(x=>x.kind==='plan'&&x.ort);
+ return plan?.ort||'';
+}
+function makeDescription(day){
+ const types=new Set(day.map(x=>x.type));
+ const hasR=types.has('Rangieren')||types.has('Rangiervorgang beendet')||types.has('Zug neu zusammenstellen')||types.has('Zug fertig');
+ const hasLoad=['Nur beladen','Nur entladen','Beladen + Entladen'].some(t=>types.has(t));
+ const hasPark=types.has('Wagen / Lok abgestellt')||types.has('Nf abgestellt');
+ const parts=[];
+ if(hasR||hasPark||hasLoad){
+   parts.push('Durchführung von Rangierarbeiten zur Bildung und Bereitstellung des Zuges.');
+   if(hasR)parts.push('Mehrere Rangierbewegungen durchgeführt.');
+   if(hasLoad)parts.push('Wagen beladen und entladen.');
+   if(hasPark)parts.push('Fahrzeuge/Wagen abgestellt.');
+ }else{
+   parts.push('Durchführung der dokumentierten Arbeiten im Einsatzbereich.');
+ }
+ return parts.join(' ');
+}
+function renderReport(){
+ const date=document.getElementById('daySelect').value;
+ const day=sortedDay(date);
+ if(!day.length){
+   document.getElementById('report').innerHTML='<div class="muted">Für diesen Tag sind keine Ereignisse vorhanden.</div>';
+   return;
+ }
+ const start=shiftStart(day),end=shiftEnd(day);
+ const ort=ortFor(day);
+ const role=(start&&start.role)||day.find(x=>x.role)?.role||'';
+ const warten=sumWaiting(day),laden=sumLoading(day),rangieren=sumRangier(day);
+ document.getElementById('report').innerHTML=`
+   <h1>Meine Schicht – Bautagesbericht</h1>
+   <div class="meta">
+     <b>Datum:</b> ${esc(date)}<br>
+     ${ort?'<b>Einsatzort:</b> '+esc(ort)+'<br>':''}
+     ${role?'<b>Tätigkeit:</b> '+esc(role):''}
+   </div>
+   <div class="description">${esc(makeDescription(day))}</div>
+   <table class="times">
+     <tr><th>Zeiterfassung</th><th>Dauer / Zeitpunkt</th></tr>
+     <tr><td>Schichtbeginn</td><td>${start?esc(start.time):'–'}</td></tr>
+     <tr><td>Wartezeiten gesamt</td><td>${fmtMin(warten)}</td></tr>
+     <tr><td>Be-/Entladen gesamt</td><td>${fmtMin(laden)}</td></tr>
+     <tr><td>Rangierarbeiten gesamt</td><td>${fmtMin(rangieren)}</td></tr>
+     <tr><td>Schichtende</td><td>${end?esc(end.time):'–'}</td></tr>
+   </table>
+   <div class="notice">Die Detaildokumentation bleibt in „Meine Schicht“ vollständig erhalten. Die Zeitwerte werden aus den dokumentierten Zeitpunkten der jeweiligen Vorgänge zusammengefasst.</div>
+   <button class="print controls" onclick="window.print()">📄 Als PDF speichern / drucken</button>
+ `;
+}
+function backToApp(){window.location.href='./index.html';}
+async function init(){
+ events=await idbAll(EVENTS_STORE);
+ const dates=[...new Set(events.filter(x=>x.kind==='event').map(x=>x.date))].sort((a,b)=>dateObj(b)-dateObj(a));
+ const sel=document.getElementById('daySelect');
+ sel.innerHTML=dates.length?dates.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join(''):'<option value="">Keine Daten</option>';
+ if(dates.length)renderReport();
+}
+init().catch(e=>{document.getElementById('report').innerHTML='<b>Fehler beim Laden der Schichtdaten.</b><br>'+esc(e.message||e)});
+</script>
+</body>
+</html>
