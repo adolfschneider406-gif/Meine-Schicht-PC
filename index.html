@@ -739,8 +739,6 @@ input::placeholder{color:#6f8798}
   <div class="app-title"><h1>MEINE SCHICHT</h1><div class="sub">Wenig Eingaben –<br>möglichst vollständige Dokumentation.</div></div>
 </div>
 <section id="home">
-  <button class="wide cockpit-wide" onclick="show('plan')">📅 <b>Einsätze KW <span id="kw"></span></b><span class="chev">›</span></button>
-
   <div class="status-panel">
     <div class="status-week">
       <div class="status-kicker">KW <span id="statusKw"></span></div>
@@ -758,13 +756,7 @@ input::placeholder{color:#6f8798}
     </div>
   </div>
 
-  <div class="section-label">AUFGABENBEREICHE</div>
-  <div class="card role-card"><div class="grid role-grid">
-    <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
-    <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
-    <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
-    <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
-  </div></div>
+  <button class="wide cockpit-wide" onclick="show('plan')">📅 <b>Einsätze KW <span id="kw"></span></b><span class="chev">›</span></button>
 
   <div class="section-label section-line">FAHRT &amp; SCHICHT <span></span></div>
   <div class="fahrt-cockpit">
@@ -776,27 +768,40 @@ input::placeholder{color:#6f8798}
     </div>
     <div class="cockpit-note">ⓘ &nbsp; Start- und Endort werden direkt bei ABFAHRT bzw.<br>ANKUNFT / TAGESABSCHLUSS abgefragt.</div>
     <button class="small cockpit-home-btn" onclick="homeArrival()">🏠 <span>TAGESABSCHLUSS</span><b>›</b></button>
-<button class="small cockpit-home-btn private-fahrt-btn" onclick="privateFahrtStart()">🚗 <span>PRIVATE FAHRT</span><b>›</b></button>
+    <button class="small cockpit-home-btn private-fahrt-btn" onclick="privateFahrtStart()">🚗 <span>PRIVATE FAHRT</span><b>›</b></button>
   </div>
-<div class="section-label section-line">🛠️ BETRIEBLICHE SCHNELLHILFEN <span></span></div>
- <div class="card quick-help-card">
-   <button class="quick-help-btn nothalt-help" onclick="showNothaltHelp()">🚨 <span><b>Nothaltauftrag</b><small>Schneller Abruf des Wortlauts</small></span><b>›</b></button>
-   <button class="quick-help-btn alphabet-help" onclick="showAlphabetHelp()">🔤 <span><b>Buchstabiertafel</b><small>Signale, Weichen und Kennungen eindeutig buchstabieren</small></span><b>›</b></button>
- </div>
- <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div>
-<div class="card settings cockpit-settings">
-  <button class="small" onclick="openSettings()">⚙️ Meine Daten</button>
-  <button class="small" onclick="openDailyReport()">📄 PDF-Bericht</button>
-  <button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button>
-  <button class="small monthly-report-btn" onclick="openMonthlyReport()">📊 Monatsbericht <span>›</span></button>
-</div>
-<nav class="bottom-nav" aria-label="Hauptnavigation">
-  <button class="active" onclick="show('home')"><span>⌂</span>Start</button>
-  <button onclick="document.getElementById('today').scrollIntoView({behavior:'smooth'})"><span>▣</span>Heute</button>
-  <button onclick="show('plan')"><span>🚂</span>Einsätze</button>
-  <button onclick="openDailyReport()"><span>▤</span>Berichte</button>
-  <button onclick="openSettings()"><span>⚙</span>Einstellungen</button>
-</nav></section>
+
+  <div class="section-label">AUFGABENBEREICHE</div>
+  <div class="card role-card"><div class="grid role-grid">
+    <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
+    <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
+    <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
+    <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
+  </div></div>
+
+  <div class="section-label section-line">🛠️ BETRIEBLICHE SCHNELLHILFEN <span></span></div>
+  <div class="card quick-help-card">
+    <button class="quick-help-btn nothalt-help" onclick="showNothaltHelp()">🚨 <span><b>Nothaltauftrag</b><small>Schneller Abruf des Wortlauts</small></span><b>›</b></button>
+    <button class="quick-help-btn alphabet-help" onclick="showAlphabetHelp()">🔤 <span><b>Buchstabiertafel</b><small>Signale, Weichen und Kennungen eindeutig buchstabieren</small></span><b>›</b></button>
+  </div>
+
+  <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div>
+
+  <div class="card settings cockpit-settings">
+    <button class="small" onclick="openSettings()">⚙️ Meine Daten</button>
+    <button class="small" onclick="openDailyReport()">📄 PDF-Bericht</button>
+    <button class="small danger" onclick="clearData()">🗑️ Erfassungsdaten löschen</button>
+    <button class="small monthly-report-btn" onclick="openMonthlyReport()">📊 Monatsbericht <span>›</span></button>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Hauptnavigation">
+    <button class="active" onclick="show('home')"><span>⌂</span>Start</button>
+    <button onclick="document.getElementById('today').scrollIntoView({behavior:'smooth'})"><span>▣</span>Heute</button>
+    <button onclick="show('plan')"><span>🚂</span>Einsätze</button>
+    <button onclick="openDailyReport()"><span>▤</span>Berichte</button>
+    <button onclick="openSettings()"><span>⚙</span>Einstellungen</button>
+  </nav>
+</section>
 <section id="plan" class="hidden"><button class="small" onclick="show('home')">← Zurück</button>
 <div class="card">
 <div class="kw-header">
