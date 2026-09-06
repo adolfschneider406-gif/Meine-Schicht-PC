@@ -241,9 +241,26 @@ function buildReportRows(){
 
     const actual=arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0));
     const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
-    const auftragBaustelle=auftrag
-      ? (baustelle ? auftrag+' / '+baustelle : auftrag)
-      : baustelle;
+
+    // Im Monatsbericht steht in Spalte L entweder der Auftraggeber
+    // ODER die Baustelle. Beides wird nicht mehr zusammengeführt.
+    // Beispiel: "BM-Bahndienste" statt "BM-Bahndienste / Wolfratshausen".
+    //
+    // Bei einer Bürofahrt gibt es keinen Auftraggeber. Dann wird statt
+    // "Büro" der tatsächliche Büro-Ort übernommen. Der Ort wird aus den
+    // persönlichen Arbeitgeberdaten abgeleitet (z.B. "... 86916 Kaufering").
+    let auftragBaustelle='';
+    if(auftrag){
+      auftragBaustelle=auftrag;
+    }else if(baustelle){
+      if(String(baustelle).trim().toLowerCase()==='büro'){
+        const employer=String(__settings?.employer||'');
+        const m=employer.match(/\b\d{5}\s+([^,]+?)\s*$/);
+        auftragBaustelle=m ? m[1].trim() : baustelle;
+      }else{
+        auftragBaustelle=baustelle;
+      }
+    }
 
     if(!ev.length){
       rows.push([day,'','','','','','','', '', '', '', '', '', '', '', '', '']);
