@@ -930,6 +930,33 @@ async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item=
   const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole()}
 function simpleEvent(type){add(type)}
 
+async function addRetroactive(){
+  await devDBReady;
+  const n=now();
+  let date=prompt('🕒 Nachtrag – Datum (TT.MM.JJJJ):',n.date);
+  if(date===null||!date.trim())return;
+  date=date.trim();
+  if(!/^\d{2}\.\d{2}\.\d{4}$/.test(date))return alert('Bitte das Datum im Format TT.MM.JJJJ eingeben.');
+  let time=prompt('🕒 Nachtrag – Uhrzeit (HH:MM):',n.time);
+  if(time===null||!time.trim())return;
+  time=time.trim();
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return alert('Bitte die Uhrzeit im Format HH:MM eingeben.');
+  let type=prompt('Art des nachzutragenden Eintrags:', '');
+  if(type===null||!type.trim())return;
+  type=type.trim();
+  let detail=prompt('Zusätzliche Angaben (optional):','');
+  if(detail===null)detail='';
+  const item={kind:'event',date,time,type,role,nachtrag:true,detail:detail.trim()};
+  const d=get();
+  const duplicate=d.some(x=>x&&x.kind==='event'&&x.date===item.date&&x.time===item.time&&x.type===item.type&&x.role===item.role&&String(x.detail||'')===item.detail);
+  if(duplicate)return alert('Dieser Eintrag ist bereits vorhanden.');
+  const id=await idbPut(EVENTS_STORE,item);
+  item.id=id;
+  __data.push(item);
+  render();
+  renderRole();
+}
+
 function chooseOption(title, options){
   return new Promise(resolve=>{
     const old=document.getElementById('choiceBackdrop');
@@ -1074,7 +1101,7 @@ async function recordEmergency(){
 let documentationOpen=false;
 function toggleDocumentation(){documentationOpen=!documentationOpen;renderRole();}
 
-function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else {
+function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else {
  let active=getActiveRangier();
  let r;
  if(active){
@@ -1101,7 +1128,7 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
   : '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>')+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
  '<button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+
- (documentationOpen ? '<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><div class="grid">'+
+ (documentationOpen ? '<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid">'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
  '<button class="small" onclick="recordSpecial()">📝 Besonderheiten</button>'+
  '<button class="small danger" onclick="recordEmergency()">🚨 Notfall</button>'+
