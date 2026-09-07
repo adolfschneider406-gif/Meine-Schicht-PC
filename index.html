@@ -930,6 +930,15 @@ async function add(type,extra={}){await devDBReady;let n=now(),d=get();let item=
   const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole()}
 function simpleEvent(type){add(type)}
 
+async function addAtTime(type,date,time,extra={}){
+  await devDBReady;
+  const item={kind:'event',date,time,type,role,nachtrag:true,...extra};
+  const d=get();
+  const duplicate=d.some(x=>x&&x.kind==='event'&&x.date===item.date&&x.time===item.time&&x.type===item.type&&x.role===item.role);
+  if(duplicate)return alert('Dieser Eintrag ist bereits vorhanden.');
+  const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole();
+}
+
 async function addRetroactive(){
   await devDBReady;
   const n=now();
@@ -941,20 +950,142 @@ async function addRetroactive(){
   if(time===null||!time.trim())return;
   time=time.trim();
   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time))return alert('Bitte die Uhrzeit im Format HH:MM eingeben.');
-  let type=prompt('Art des nachzutragenden Eintrags:', '');
-  if(type===null||!type.trim())return;
-  type=type.trim();
-  let detail=prompt('Zusätzliche Angaben (optional):','');
-  if(detail===null)detail='';
-  const item={kind:'event',date,time,type,role,nachtrag:true,detail:detail.trim()};
-  const d=get();
-  const duplicate=d.some(x=>x&&x.kind==='event'&&x.date===item.date&&x.time===item.time&&x.type===item.type&&x.role===item.role&&String(x.detail||'')===item.detail);
-  if(duplicate)return alert('Dieser Eintrag ist bereits vorhanden.');
-  const id=await idbPut(EVENTS_STORE,item);
-  item.id=id;
-  __data.push(item);
-  render();
-  renderRole();
+
+  const options=[];
+  if(role==='RbBau'){
+    options.push(
+      {value:'rangieren-tfz',label:'🚂 Rangieren Tfz'},
+      {value:'rangieren-nf',label:'🚃 Rangieren Nf'},
+      {value:'halten',label:'⏸ Halten / Warten'},
+      {value:'ankuppeln',label:'🔗 Ankuppeln'},
+      {value:'abkuppeln',label:'🔓 Abkuppeln'},
+      {value:'laden',label:'📦 Laden / Entladen'},
+      {value:'zug-neu',label:'🔄 Zug neu zusammenstellen'},
+      {value:'wagenliste',label:'📋 Wagenliste'},
+      {value:'bremsprobe',label:'🛑 Bremsprobe'},
+      {value:'zug-fertig',label:'✅ Zug fertig'},
+      {value:'parken',label:'🅿️ Wagen / Lok abgestellt'},
+      {value:'sichern',label:'🚂 Wagen gesichert'},
+      {value:'stoerung',label:'⚠️ Störung'},
+      {value:'besonderheit',label:'📝 Besonderheit'},
+      {value:'notfall',label:'🚨 Notfall'},
+      {value:'vorfall',label:'⚠️ Vorfall / Ereignis'}
+    );
+  }else if(role==='SAKRA'){
+    options.push(
+      {value:'sperrgespraech',label:'🗣️ Sperrgespräch geführt'},
+      {value:'sperrung-erhalten',label:'🔒 Sperrung erhalten'},
+      {value:'sperrung-aufgehoben',label:'🔓 Sperrung aufgehoben'},
+      {value:'nicht-erhalten',label:'❌ Sperrung nicht erhalten'},
+      {value:'besonderheit',label:'📝 Besonderheit'},
+      {value:'notfall',label:'🚨 Notfall'}
+    );
+  }else if(role==='BüP'){
+    options.push(
+      {value:'zugmeldung',label:'📞 Zugmeldung / Anruf erhalten'},
+      {value:'sicherung',label:'🛑 Bahnübergang gesichert'},
+      {value:'zug-vorbei',label:'🚆 Zug vorbeigefahren'},
+      {value:'aufgehoben',label:'✅ Sicherung aufgehoben'},
+      {value:'besonderheit',label:'📝 Besonderheit'},
+      {value:'notfall',label:'🚨 Notfall'}
+    );
+  }else{
+    options.push(
+      {value:'beginn',label:'▶️ Schichtbeginn'},
+      {value:'ende',label:'🛑 Schichtende'},
+      {value:'anruf',label:'📞 Anruf / Mitteilung erhalten'},
+      {value:'besonderheit',label:'📝 Besonderheit'},
+      {value:'notfall',label:'🚨 Notfall'}
+    );
+  }
+
+  const choice=await chooseOption('🕒 Nachtrag – Eintrag auswählen:',options);
+  if(choice===null)return;
+
+  if(choice==='rangieren-tfz')return addAtTime('Rangieren',date,time,{rangierobjekt:'Tfz',nachtrag:true});
+  if(choice==='rangieren-nf')return addAtTime('Rangieren',date,time,{rangierobjekt:'Nf',nachtrag:true});
+  if(choice==='ankuppeln')return addAtTime('Ankuppeln',date,time);
+  if(choice==='abkuppeln')return addAtTime('Abkuppeln',date,time);
+  if(choice==='wagenliste')return addAtTime('Wagenliste erstellt',date,time);
+  if(choice==='bremsprobe')return addAtTime('Bremsprobe durchgeführt',date,time);
+  if(choice==='zug-neu')return addAtTime('Zug neu zusammenstellen',date,time);
+  if(choice==='zug-fertig')return addAtTime('Zug fertig',date,time,{detail:'Rangierarbeiten zur Bildung des Zuges durchgeführt, einschließlich Herausziehen und Zustellen von Wagen, Umsetzen und Herstellen der vorgesehenen Wagenreihenfolge, Anfertigen der Wagenliste und Durchführung der vollen Bremsprobe.'});
+  if(choice==='parken')return addAtTime('Wagen / Lok abgestellt',date,time);
+  if(choice==='sichern')return addAtTime('Wagen gesichert',date,time);
+  if(choice==='stoerung')return addAtTime('Störung',date,time);
+  if(choice==='sperrgespraech')return addAtTime('Sperrgespräch geführt',date,time);
+  if(choice==='sperrung-aufgehoben')return addAtTime('Sperrung aufgehoben',date,time);
+  if(choice==='nicht-erhalten'){
+    const v=prompt('Grund für „Sperrung nicht erhalten“:','');
+    if(v===null||!v.trim())return;
+    return addAtTime('Sperrung nicht erhalten',date,time,{detail:v.trim()});
+  }
+  if(choice==='sperrung-erhalten'){
+    const v=prompt('Gleis / Streckenabschnitt:','');
+    if(v===null||!v.trim())return;
+    return addAtTime('Sperrung erhalten',date,time,{detail:v.trim()});
+  }
+  if(choice==='zug-vorbei')return addAtTime('Zug vorbeigefahren',date,time);
+  if(choice==='aufgehoben')return addAtTime('Sicherungsmaßnahme aufgehoben',date,time);
+  if(choice==='sicherung')return addAtTime('Sicherungsmaßnahme durchgeführt',date,time);
+  if(choice==='zugmeldung'){
+    let d=get().filter(x=>x.kind==='setup'&&x.role==='BüP').slice(-1)[0]||{};
+    let fd1=(d.fd1||'').trim(),fd2=(d.fd2||'').trim();
+    if(!fd1||!fd2)return alert('Bitte zuerst Fahrdienst 1 und Fahrdienst 2 in den Grunddaten eintragen.');
+    let v=await chooseOption('Wer hat angerufen / gemeldet?',[
+      {value:'1',label:'📞 '+fd1},{value:'2',label:'📞 '+fd2}
+    ]);
+    if(v===null)return;
+    const von=v==='1'?fd1:fd2,nach=v==='1'?fd2:fd1;
+    return addAtTime('Zugmeldung erhalten',date,time,{detail:(v==='1'?'Fahrdienst 1 meldet':'Fahrdienst 2 meldet'),von,nach,zugmeldungVon:(v==='1'?'Fahrdienst 1 meldet':'Fahrdienst 2 meldet')});
+  }
+  if(choice==='laden'){
+    const v=await chooseOption('Laden / Entladen nachtragen:',[
+      {value:'1',label:'📦 Nur beladen'},{value:'2',label:'📤 Nur entladen'},{value:'3',label:'📦📤 Beladen + Entladen'}
+    ]);
+    if(v==='1')return addAtTime('Nur beladen',date,time);
+    if(v==='2')return addAtTime('Nur entladen',date,time);
+    if(v==='3')return addAtTime('Beladen + Entladen',date,time);
+    return;
+  }
+  if(choice==='halten'){
+    const v=await chooseOption('Halten / Warten nachtragen:',[
+      {value:'1',label:'🚆 Zug / Fahrzeug'},{value:'2',label:'👷 Mitarbeiter im Gleisbereich'},{value:'3',label:'🚦 Warten auf Zustimmung'},{value:'4',label:'⚠️ Störung'},{value:'5',label:'✏️ Sonstiges'}
+    ]);
+    if(v===null)return;
+    const m={'1':'Zug / Fahrzeug','2':'Mitarbeiter im Gleisbereich','3':'Warten auf Zustimmung','4':'Störung'};
+    let detail='';
+    if(v==='5'){detail=prompt('Sonstiges:','');if(detail===null||!detail.trim())return;detail='Sonstiges – '+detail.trim();}
+    else detail=m[v];
+    return addAtTime('Halten / Warten',date,time,{grund:detail,detail});
+  }
+  if(choice==='beginn')return addAtTime('Sipo Schichtbeginn',date,time);
+  if(choice==='ende')return addAtTime('Sipo Schichtende',date,time);
+  if(choice==='anruf'){
+    const v=prompt('Was wurde telefonisch mitgeteilt?','');
+    if(v===null||!v.trim())return;
+    return addAtTime('Anruf / Mitteilung erhalten',date,time,{detail:v.trim()});
+  }
+  if(choice==='besonderheit'){
+    const v=prompt('Was war die Besonderheit?','');
+    if(v===null||!v.trim())return;
+    return addAtTime('Besonderheit',date,time,{detail:v.trim(),specialText:v.trim()});
+  }
+  if(choice==='notfall'){
+    const v=await chooseOption('🚨 Notfall – Art:',[
+      {value:'nothalt',label:'🛑 Nothaltauftrag'},{value:'notruf',label:'📞 Notruf / Gefahrenmeldung'},{value:'sonstiger',label:'⚠️ Sonstiger Notfall'}
+    ]);
+    if(v===null)return;
+    const labels={nothalt:'Nothaltauftrag abgegeben',notruf:'Notruf / Gefahrenmeldung',sonstiger:'Sonstiger Notfall'};
+    const text=prompt('Was ist passiert / was wurde veranlasst?','');
+    if(text===null||!text.trim())return;
+    return addAtTime('Notfall',date,time,{detail:labels[v]+' – '+text.trim(),emergencyType:labels[v],emergencyText:text.trim()});
+  }
+  if(choice==='vorfall'){
+    const text=prompt('Was ist passiert?','');
+    if(text===null||!text.trim())return;
+    return addAtTime('Vorfall / Ereignis',date,time,{detail:text.trim()});
+  }
 }
 
 function chooseOption(title, options){
