@@ -742,6 +742,13 @@ input::placeholder{color:#6f8798}
 .choice-cancel{margin-top:10px;width:100%;background:#111b24!important;color:#9eb0c1!important}
 @media(max-width:600px){.choice-backdrop{padding:12px}.choice-box{padding:14px}.choice-title{font-size:18px}.choice-grid{grid-template-columns:1fr 1fr}.choice-btn{min-height:58px!important;font-size:16px!important}}
 </style>
+<style id="documentation-ui">
+.doc-toggle{width:100%!important;margin-top:10px!important;display:flex!important;align-items:center!important;gap:10px!important;background:linear-gradient(180deg,#082239,#061722)!important;color:#bfe8ff!important;border:1px solid #1f8fca!important;border-radius:14px!important;padding:13px 14px!important;font-size:16px!important}
+.doc-toggle b{margin-left:auto;font-size:25px;color:#8db8d0}
+.doc-panel{margin-top:8px;padding:10px;border:1px solid #173f57;border-radius:14px;background:#06121d}
+.doc-hint{margin:0 2px 9px;color:#91a6b8;font-size:12px;line-height:1.35}
+.doc-panel .grid{gap:7px}.doc-panel button{padding:10px 8px!important;font-size:13px!important}
+</style>
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -799,13 +806,17 @@ input::placeholder{color:#6f8798}
     <button class="small cockpit-home-btn private-fahrt-btn" onclick="privateFahrtStart()">🚗 <span>PRIVATE FAHRT</span><b>›</b></button>
   </div>
 
-  <div class="section-label">AUFGABENBEREICHE</div>
-  <div class="card role-card"><div class="grid role-grid">
-    <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
-    <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
-    <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
-    <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
-  </div></div>
+  <button class="doc-toggle home-doc-toggle" onclick="toggleHomeDocumentation()">📝 <span>Dokumentation erfassen</span><b id="homeDocChevron">›</b></button>
+  <div id="homeDocumentationPanel" class="doc-panel" style="display:none">
+    <div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div>
+    <div class="section-label">AUFGABENBEREICHE</div>
+    <div class="card role-card"><div class="grid role-grid">
+      <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
+      <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
+      <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
+      <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
+    </div></div>
+  </div>
 
   <div class="section-label section-line">🛠️ BETRIEBLICHE SCHNELLHILFEN <span></span></div>
   <div class="card quick-help-card">
@@ -874,7 +885,7 @@ input::placeholder{color:#6f8798}
 </div></section>
 <section id="role" class="hidden"><button class="small" onclick="show('home')">← Zurück</button><div class="card"><h2 id="roleTitle"></h2><div id="setup"></div></div><div class="card"><div id="buttons"></div></div><div class="card"><h2>Dokumentation</h2><div id="events" class="muted"></div></div></section>
 </div><script>
-const DB_NAME='MeineSchichtDB_DEV';const DB_VERSION=1;let dbPromise=null;const EVENTS_STORE='events',PLANS_STORE='plans',SETTINGS_STORE='settings',RANGIER_STORE='activeRangier';let role='';let planWeekOffset=0;
+const DB_NAME='MeineSchichtDB_DEV';const DB_VERSION=1;let dbPromise=null;const EVENTS_STORE='events',PLANS_STORE='plans',SETTINGS_STORE='settings',RANGIER_STORE='activeRangier';let role='';let planWeekOffset=0;let homeDocumentationOpen=false;
 function openDB(){if(dbPromise)return dbPromise;dbPromise=new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(EVENTS_STORE)){const st=db.createObjectStore(EVENTS_STORE,{keyPath:'id',autoIncrement:true});st.createIndex('date','date');st.createIndex('type','type');st.createIndex('role','role')}if(!db.objectStoreNames.contains(PLANS_STORE)){const st=db.createObjectStore(PLANS_STORE,{keyPath:'id',autoIncrement:true});st.createIndex('date','date');st.createIndex('role','role')}if(!db.objectStoreNames.contains(SETTINGS_STORE))db.createObjectStore(SETTINGS_STORE,{keyPath:'id'});if(!db.objectStoreNames.contains(RANGIER_STORE))db.createObjectStore(RANGIER_STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});return dbPromise}
 function idbAll(store){return openDB().then(db=>new Promise((resolve,reject)=>{const r=db.transaction(store,'readonly').objectStore(store).getAll();r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)}))}
 function idbPut(store,obj){return openDB().then(db=>new Promise((resolve,reject)=>{const r=db.transaction(store,'readwrite').objectStore(store).put(obj);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)}))}
@@ -887,6 +898,7 @@ function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMont
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
 function show(id){['home','plan','role','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();render()}
+function toggleHomeDocumentation(){homeDocumentationOpen=!homeDocumentationOpen;const p=document.getElementById('homeDocumentationPanel');const c=document.getElementById('homeDocChevron');if(p)p.style.display=homeDocumentationOpen?'block':'none';if(c)c.textContent=homeDocumentationOpen?'⌃':'›';}
 const SETTINGS_KEY='personal';
 function getSettings(){return __settings}
 function openSettings(){loadSettings();show('settings')}
@@ -1059,7 +1071,10 @@ async function recordEmergency(){
   });
 }
 
-function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div>';else {
+let documentationOpen=false;
+function toggleDocumentation(){documentationOpen=!documentationOpen;renderRole();}
+
+function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else {
  let active=getActiveRangier();
  let r;
  if(active){
@@ -1085,10 +1100,13 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
   ? '<button class="small" onclick="nfParkStatus()">🅿️ Nf Abgestellt / Ausgegleist</button>'
   : '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>')+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
+ '<button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+
+ (documentationOpen ? '<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><div class="grid">'+
  '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
  '<button class="small" onclick="recordSpecial()">📝 Besonderheiten</button>'+
  '<button class="small danger" onclick="recordEmergency()">🚨 Notfall</button>'+
- '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div>';
+ '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div></div>' : '')+
+ '</div>';
  if(active){
    let mode=active.rangierobjekt||'Tfz';
    let info=mode==='Nf'?'Nf':'Tfz · '+(active.fahrart||'');
