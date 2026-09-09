@@ -230,13 +230,20 @@ function buildReportRows(){
 
     const ausfall=ev.some(x=>x.type==='Schichtausfall' || x.ausfallschicht===true);
     const wohnort=ausfall ? '' : (dep?.start||'');
-    const baustelle=ausfall ? '' : (plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'');
+    let baustelle=ausfall ? '' : (plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'');
+    const isOfficeTrip=!ausfall && String(plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'').trim().toLowerCase()==='büro';
+    // Bei einer Bürofahrt soll in Spalte C der tatsächliche Büro-Ort stehen.
+    if(isOfficeTrip){
+      const employer=String(__settings?.employer||'');
+      const m=employer.match(/\b\d{5}\s+([^,]+?)\s*$/);
+      baustelle=m ? m[1].trim() : '';
+    }
     const reiseVon=dep?.time||'';
     const reiseBis=(dayEnd?.time||arrival?.time||'');
-    const reisezeit=ausfall ? 'Ausfallschicht' : (reiseVon&&reiseBis
+    const reisezeit=(ausfall||isOfficeTrip) ? (ausfall ? 'Ausfallschicht' : '') : (reiseVon&&reiseBis
       ? String(reiseVon).slice(0,5)+'–'+String(reiseBis).slice(0,5)
       : '');
-    const ausserHaus=ausfall ? '' : durationHours(reiseVon,reiseBis);
+    const ausserHaus=(ausfall||isOfficeTrip) ? '' : durationHours(reiseVon,reiseBis);
     const kmDay=ausfall ? 0 : (date?dailyKmForDate(date,g):0);
 
     // Monatsbericht: Arbeitszeit immer aus dem geplanten Einsatz übernehmen.
@@ -262,17 +269,12 @@ function buildReportRows(){
     const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
 
     // Spalte L: Auftraggeber ODER Baustelle, nicht beides zusammen.
-    // Bei einer Bürofahrt wird der tatsächliche Büro-Ort aus den
-    // gespeicherten persönlichen Arbeitgeberdaten übernommen.
+    // Eine Bürofahrt wird nicht in Spalte L geführt.
     let auftragBaustelle='';
-    if(auftrag){
-      auftragBaustelle=auftrag;
-    }else if(baustelle){
-      if(String(baustelle).trim().toLowerCase()==='büro'){
-        const employer=String(__settings?.employer||'');
-        const m=employer.match(/\b\d{5}\s+([^,]+?)\s*$/);
-        auftragBaustelle=m ? m[1].trim() : baustelle;
-      }else{
+    if(!isOfficeTrip){
+      if(auftrag){
+        auftragBaustelle=auftrag;
+      }else if(baustelle){
         auftragBaustelle=baustelle;
       }
     }
