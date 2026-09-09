@@ -789,10 +789,10 @@ input::placeholder{color:#6f8798}
   .app-title h1{font-size:26px!important;line-height:1!important;margin:0!important;letter-spacing:.2px!important}
   .app-title .sub{display:none!important}
 
-  /* Die vier Hauptaktionen als 2x2-Touchfeld. */
-  .fahrt-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;justify-items:center!important}
-  .fahrt-btn{width:108px!important;min-width:108px!important;min-height:108px!important;height:108px!important;font-size:24px!important;padding:8px!important}
-  .fahrt-btn span{font-size:10px!important;max-width:82px!important}
+  /* Die vier Hauptaktionen kompakt in einer Reihe – wie in der ursprünglichen Ansicht. */
+  .fahrt-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:5px!important;justify-items:stretch!important}
+  .fahrt-btn{width:100%!important;min-width:0!important;min-height:78px!important;height:auto!important;aspect-ratio:1!important;border-radius:50%!important;font-size:22px!important;padding:8px 1px!important}
+  .fahrt-btn span{font-size:9px!important;max-width:62px!important}
 
   /* Heutige Dokumentation früher und kompakter. */
   #home>.card:has(>#today){margin-top:9px!important}
