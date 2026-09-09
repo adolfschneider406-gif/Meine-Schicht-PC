@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bahn-km Navi</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#10151b;color:#eef2f5}
+header{padding:14px 16px;background:#18212b;border-bottom:1px solid #2d3a47}
+h1{margin:0;font-size:21px}.sub{font-size:12px;opacity:.7;margin-top:3px}
+.controls{padding:12px;background:#121a22;display:flex;gap:8px;flex-wrap:wrap}
+input,button{font:inherit;border-radius:8px;border:1px solid #3b4a58;padding:10px 12px;background:#1b2631;color:#fff}
+input{flex:1;min-width:230px}button{cursor:pointer}.primary{background:#244b68}
+#status{padding:8px 12px;font-size:12px;opacity:.8}
+#map{height:62vh;min-height:420px}
+#results{padding:10px}.result{background:#18212b;border:1px solid #2b3946;border-radius:10px;padding:10px;margin-bottom:8px}
+.result b{font-size:14px}.meta{font-size:12px;opacity:.75;margin-top:4px}.actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}.small{font-size:12px;padding:7px 9px}
+.note{padding:10px 12px;font-size:11px;opacity:.65}
+</style>
+</head>
+<body>
+<header><h1>🚆 Bahn-km Navi</h1><div class="sub">TomTom-POI-Daten • lokale Suche • Kartenansicht</div></header>
+<div class="controls">
+<input id="q" placeholder="z. B. 3010 159,5 oder Kleinkems" autocomplete="off">
+<select id="cat" style="font:inherit;border-radius:8px;border:1px solid #3b4a58;padding:10px;background:#1b2631;color:#fff">
+<option value="">Alle</option><option value="Hekto">Hektometertafeln</option><option value="Betriebsstellen">Betriebsstellen</option><option value="Bue">BÜ</option><option value="Bruecken">Brücken</option><option value="Tunnel">Tunnel</option>
+</select>
+<button class="primary" onclick="search()">🔎 Suchen</button>
+<button onclick="locate()">📍 Mein Standort</button><button onclick="backToApp()">↩️ Meine Schicht</button>
+</div>
+<div id="status">Daten werden geladen …</div>
+<div id="map"></div>
+<div id="results"></div>
+<div class="note">Karte: © OpenStreetMap-Beitragende. Die TomTom-POI-Daten stammen aus den vom Nutzer bereitgestellten Originaldateien. GPS-Navigation dient der Orientierung und ersetzt keine betriebliche/amtliche Sicherungs- oder Vermessungsinformation.</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let data=[], map, targetMarker=null, userMarker=null, accuracyCircle=null;
+
+map=L.map('map').setView([51.1657,10.4515],6);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap-Beitragende'}).addTo(map);
+
+fetch('bahn-km-daten.json').then(r=>r.json()).then(d=>{
+ data=d;
+ document.getElementById('status').textContent=`${data.length.toLocaleString('de-DE')} POIs geladen.`;
+}).catch(e=>document.getElementById('status').textContent='Daten konnten nicht geladen werden.');
+
+function norm(s){
+ return String(s).toLowerCase()
+   .replace(/[–—]/g,'-')
+   .replace(/,/g,'.')
+   .replace(/\s+/g,'')
+   .replace(/km/g,'');
+}
+function score(rec,q){
+ const s=norm(rec.n), x=norm(q);
+ if(s===x) return 2000;
+ if(s.includes(x)) return 1500;
+ // Railway input like "3010 159,5" -> "3010-159.5"
+ const compact=x.replace(/-/g,'');
+ if(s.replace(/-/g,'').includes(compact)) return 1400;
+ let parts=q.toLowerCase().split(/[\s,;]+/).filter(Boolean), hit=0;
+ for(const p of parts){
+   const z=p.replace('km','');
+   if(rec.n.toLowerCase().includes(z) || norm(rec.n).includes(norm(z))) hit++;
+ }
+ return hit*200 - Math.min(rec.n.length,200)/100;
+}
+function search(){
+ const q=document.getElementById('q').value.trim();
+ if(!q||!data.length)return;
+ const cat=document.getElementById('cat').value;
+ const results=data.map(r=>({r,sc:score(r,q)})).filter(x=>x.sc>0 && (!cat || x.r.c===cat)).sort((a,b)=>b.sc-a.sc).slice(0,30);
+ render(results.map(x=>x.r));
+ if(results.length) focus(results[0].r);
+}
+function render(rs){
+ const el=document.getElementById('results');
+ el.innerHTML=rs.length?rs.map((r,i)=>`
+ <div class="result">
+  <b>${esc(r.n)}</b>
+  <div class="meta">${esc(r.c)} · ${r.a.toFixed(6)}, ${r.o.toFixed(6)}</div>
+  <div class="actions">
+   <button class="small" onclick='focus(${JSON.stringify(r)})'>📍 Anzeigen</button>
+   <button class="small" onclick='route(${r.a},${r.o})'>🚗 Navigation</button>
+  </div>
+ </div>`).join(''):'<div class="result">Keine passenden Punkte gefunden.</div>';
+}
+function focus(r){
+ if(targetMarker)map.removeLayer(targetMarker);
+ targetMarker=L.marker([r.a,r.o]).addTo(map).bindPopup(`<b>${esc(r.n)}</b><br>${esc(r.c)}`).openPopup();
+ map.setView([r.a,r.o],16);
+ showNearby(r);
+}
+function backToApp(){ window.location.href='./index.html'; }
+function route(lat,lon){
+ const url=`https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}&travelmode=driving`;
+ window.open(url,'_blank');
+}
+function locate(){
+ if(!navigator.geolocation){alert('GPS wird von diesem Browser nicht unterstützt.');return;}
+ document.getElementById('status').textContent='Standort wird ermittelt …';
+ navigator.geolocation.getCurrentPosition(p=>{
+  const lat=p.coords.latitude,lon=p.coords.longitude,acc=p.coords.accuracy;
+  if(userMarker)map.removeLayer(userMarker);
+  if(accuracyCircle)map.removeLayer(accuracyCircle);
+  userMarker=L.marker([lat,lon]).addTo(map).bindPopup('📍 Mein Standort').openPopup();
+  accuracyCircle=L.circle([lat,lon],{radius:acc}).addTo(map);
+  map.setView([lat,lon],15);
+  document.getElementById('status').textContent=`Standort: ${lat.toFixed(6)}, ${lon.toFixed(6)} · Genauigkeit ca. ${Math.round(acc)} m`;
+ },e=>document.getElementById('status').textContent='Standort konnte nicht ermittelt werden.');
+}
+
+function hav(a,b,c,d){
+ const R=6371000, p1=a*Math.PI/180,p2=c*Math.PI/180;
+ const dp=(c-a)*Math.PI/180,dq=(d-b)*Math.PI/180;
+ const x=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dq/2)**2;
+ return 2*R*Math.asin(Math.sqrt(x));
+}
+function nearestTo(lat,lon,cat,limit=5){
+ return data.filter(r=>!cat||r.c===cat).map(r=>({...r,d: hav(lat,lon,r.a,r.o)})).sort((x,y)=>x.d-y.d).slice(0,limit);
+}
+function showNearby(r){
+ const near=nearestTo(r.a,r.o,"",8);
+ const box=document.createElement('div');
+ box.className='result';
+ box.innerHTML='<b>🔎 Umgebung</b>'+near.map(x=>`<div class="meta">${esc(x.c)} · ${esc(x.n)} · ${Math.round(x.d)} m</div>`).join('');
+ document.getElementById('results').prepend(box);
+}
+
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')search();});
+</script>
+<script>function openBahnKmNavi(){window.location.href='./Bahn-km-Navi.html';}</script></body></html>
