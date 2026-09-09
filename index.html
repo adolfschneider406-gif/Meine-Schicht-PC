@@ -1030,7 +1030,15 @@ async function addRetroactive(){
   const choice=await chooseOption('🕒 Nachtrag – Eintrag auswählen:',options);
   if(choice===null)return;
 
-  if(choice==='rangieren-tfz')return addAtTime('Rangieren',date,time,{rangierobjekt:'Tfz',nachtrag:true});
+  if(choice==='rangieren-tfz'){
+    let v=prompt('Von (KM, Gleis, Signal oder Ort):','');
+    if(v===null||!v.trim())return;
+    let n=prompt('Nach / Ziel (KM, Gleis, Signal oder Ort):','');
+    if(n===null||!n.trim())return;
+    let fahrart=await chooseRangierart();
+    if(!fahrart)return;
+    return addAtTime('Rangieren',date,time,{von:v.trim(),nach:n.trim(),fahrart,rangierobjekt:'Tfz',nachtrag:true});
+  }
   if(choice==='rangieren-nf')return addAtTime('Rangieren',date,time,{rangierobjekt:'Nf',nachtrag:true});
   if(choice==='ankuppeln')return addAtTime('Ankuppeln',date,time);
   if(choice==='abkuppeln')return addAtTime('Abkuppeln',date,time);
@@ -1453,7 +1461,7 @@ async function holdMove(){
   add('Halten / Warten',{detail:detail,rangierVorgang:active.von+' → '+active.nach,haltKm:haltKm||''});
   renderRole();
 }
-function changeDirection(){
+async function changeDirection(){
  let active=getActiveRangier();
  if(!active)return alert('Kein aktiver Rangiervorgang.');
 
@@ -1461,22 +1469,40 @@ function changeDirection(){
  let newArt=oldArt==='geschoben'?'gezogen':'geschoben';
 
  let ok=confirm(
-   'Rangierart wechseln?\\n\\n'+
+   'Rangierart wechseln?\n\n'+
    (oldArt==='geschoben'?'🟢 Geschoben':'🔵 Gezogen')+
    ' → '+
    (newArt==='geschoben'?'🟢 Geschoben':'🔵 Gezogen')+
-   '\\n\\nDer bestehende Rangiervorgang läuft weiter.'
+   '\n\nDer bestehende Rangiervorgang läuft weiter.'
  );
  if(!ok)return;
+
+ let ort=await chooseOption('📍 Wo fand der Richtungswechsel statt?',[
+   {value:'weiche',label:'🔀 Weiche'},
+   {value:'signal',label:'🚦 Signal'},
+   {value:'sonstiges',label:'📍 Sonstiger Ort'}
+ ]);
+ if(ort===null)return;
+ let bezeichnung=prompt(
+   ort==='weiche'?'Bezeichnung / Nummer der Weiche:':
+   ort==='signal'?'Signalbezeichnung / Signalnummer:':
+   'Ort des Richtungswechsels:',
+   ''
+ );
+ if(bezeichnung===null||!bezeichnung.trim())return;
+ bezeichnung=bezeichnung.trim();
 
  active.fahrart=newArt;
  setActiveRangier(active);
 
  add('Richtungswechsel',{
-   detail:(oldArt==='geschoben'?'Geschoben':'Gezogen')+' → '+(newArt==='geschoben'?'Geschoben':'Gezogen'),
+   detail:(oldArt==='geschoben'?'Geschoben':'Gezogen')+' → '+(newArt==='geschoben'?'Geschoben':'Gezogen')+' · '+
+          (ort==='weiche'?'Weiche ':ort==='signal'?'Signal ':'Ort ')+bezeichnung,
    rangierVorgang:active.von+' → '+active.nach,
    fahrartAlt:oldArt,
-   fahrartNeu:newArt
+   fahrartNeu:newArt,
+   richtungswechselOrtTyp:ort,
+   richtungswechselOrt:bezeichnung
  });
  renderRole();
 }
