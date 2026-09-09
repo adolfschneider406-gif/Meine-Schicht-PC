@@ -228,9 +228,9 @@ function buildReportRows(){
     const shiftEnd=ev.find(x=>x.type==='Schichtende');
     const plan=plannedForDate(date,g);
 
+    const ausfall=ev.some(x=>x.type==='Schichtausfall' || x.ausfallschicht===true);
     const wohnort=ausfall ? '' : (dep?.start||'');
     const baustelle=ausfall ? '' : (plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'');
-    const ausfall=ev.some(x=>x.type==='Schichtausfall' || x.ausfallschicht===true);
     const reiseVon=dep?.time||'';
     const reiseBis=(dayEnd?.time||arrival?.time||'');
     const reisezeit=ausfall ? 'Ausfallschicht' : (reiseVon&&reiseBis
@@ -287,7 +287,7 @@ function buildReportRows(){
       wohnort,                     // B von Wohnort
       baustelle,                   // C zur Baustelle
       reisezeit,                   // D Reisezeit von–bis
-      ausserHaus===''||ausserHaus==null?'':Number(ausserHaus.toFixed(2)), // E Zeit außer Haus
+      ausserHaus===''||ausserHaus===''||ausserHaus==null?'':Number(ausserHaus.toFixed(2)), // E Zeit außer Haus
       plan?.plate||plan?.kennzeichen||'',                // F
       kmDay||0,                    // G Tages-km
       '',                          // H Privat-Kfz
