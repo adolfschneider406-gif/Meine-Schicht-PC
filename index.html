@@ -749,6 +749,25 @@ input::placeholder{color:#6f8798}
 .doc-hint{margin:0 2px 9px;color:#91a6b8;font-size:12px;line-height:1.35}
 .doc-panel .grid{gap:7px}.doc-panel button{padding:10px 8px!important;font-size:13px!important}
 </style>
+
+<style id="bahn-km-navi-ui">
+.bahn-km-navi-btn{
+  width:100%!important;display:flex!important;align-items:center!important;gap:10px!important;
+  justify-content:flex-start!important;text-align:left!important;margin:0!important;padding:13px 14px!important;
+  border-radius:15px!important;background:linear-gradient(180deg,#082239,#061722)!important;
+  color:#bfe8ff!important;border:1px solid #1f8fca!important;min-height:62px!important;
+}
+.bahn-km-navi-btn>span{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.bahn-km-navi-btn>span b{font-size:16px}
+.bahn-km-navi-btn>span small{font-size:11px;color:#91a6b8;font-weight:600;line-height:1.25}
+.bahn-km-navi-btn>b:last-child{font-size:27px;color:#8db8d0}
+@media(max-width:600px){
+  .bahn-km-navi-btn{min-height:58px!important;padding:11px 12px!important}
+  .bahn-km-navi-btn>span b{font-size:15px}
+  .bahn-km-navi-btn>span small{font-size:10px}
+}
+</style>
+
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -822,6 +841,11 @@ input::placeholder{color:#6f8798}
   <div class="card quick-help-card">
     <button class="quick-help-btn nothalt-help" onclick="showNothaltHelp()">🚨 <span><b>Nothaltauftrag</b><small>Schneller Abruf des Wortlauts</small></span><b>›</b></button>
     <button class="quick-help-btn alphabet-help" onclick="showAlphabetHelp()">🔤 <span><b>Buchstabiertafel</b><small>Signale, Weichen und Kennungen eindeutig buchstabieren</small></span><b>›</b></button>
+  </div>
+
+  <div class="section-label section-line">🚆 NAVIGATION &amp; WERKZEUGE <span></span></div>
+  <div class="card quick-help-card">
+    <button class="bahn-km-navi-btn" onclick="window.location.href='./Bahn-km-Navi.html'">🚆 <span><b>Bahn-km Navi</b><small>Bahnstrecke &amp; Kilometer suchen · Karte · GPS · Navigation</small></span><b>›</b></button>
   </div>
 
   <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div>
