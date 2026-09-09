@@ -287,7 +287,7 @@ function buildReportRows(){
       wohnort,                     // B von Wohnort
       baustelle,                   // C zur Baustelle
       reisezeit,                   // D Reisezeit von–bis
-      ausserHaus==null?'':Number(ausserHaus.toFixed(2)), // E Zeit außer Haus
+      ausserHaus===''||ausserHaus==null?'':Number(ausserHaus.toFixed(2)), // E Zeit außer Haus
       plan?.plate||plan?.kennzeichen||'',                // F
       kmDay||0,                    // G Tages-km
       '',                          // H Privat-Kfz
