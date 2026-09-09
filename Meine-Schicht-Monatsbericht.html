@@ -228,8 +228,8 @@ function buildReportRows(){
     const shiftEnd=ev.find(x=>x.type==='Schichtende');
     const plan=plannedForDate(date,g);
 
-    const wohnort=dep?.start||'';
-    const baustelle=plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'';
+    const wohnort=ausfall ? '' : (dep?.start||'');
+    const baustelle=ausfall ? '' : (plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'');
     const ausfall=ev.some(x=>x.type==='Schichtausfall' || x.ausfallschicht===true);
     const reiseVon=dep?.time||'';
     const reiseBis=(dayEnd?.time||arrival?.time||'');
@@ -258,7 +258,7 @@ function buildReportRows(){
       .filter(x=>x.type==='Private Fahrt mit Firmen-KFZ')
       .reduce((s,x)=>s+(kmNumber(x.privateKm)||0),0);
 
-    const actual=ausfall ? '' : (arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0)));
+    const actual=(arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0)));
     const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
 
     // Spalte L: Auftraggeber ODER Baustelle, nicht beides zusammen.
