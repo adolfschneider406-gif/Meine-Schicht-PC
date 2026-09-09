@@ -478,7 +478,7 @@ function sumRows(rows, colIndex, startDay, endDay){
     },0).toFixed(2));
 }
 
-async function exportMonthlyReport(){
+async async function exportMonthlyReport(){
   await __reportReady;
   const msg=document.getElementById('reportMessage');
   try{

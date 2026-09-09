@@ -1488,15 +1488,11 @@ async function changeDirection(){
  let newArt=oldArt==='geschoben'?'gezogen':'geschoben';
 
  let ok=confirm(
-   'Rangierart wechseln?
-
-'+
+   'Rangierart wechseln?\n\n'+
    (oldArt==='geschoben'?'🟢 Geschoben':'🔵 Gezogen')+
    ' → '+
    (newArt==='geschoben'?'🟢 Geschoben':'🔵 Gezogen')+
-   '
-
-Der bestehende Rangiervorgang läuft weiter.'
+   '\n\nDer bestehende Rangiervorgang läuft weiter.'
  );
  if(!ok)return;
 
