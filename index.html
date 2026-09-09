@@ -768,6 +768,34 @@ input::placeholder{color:#6f8798}
 }
 </style>
 
+
+<style id="smartphone-cockpit-optimization">
+@media (max-width:600px){
+  /* Kompakter Kopf: mehr Platz für die eigentlichen Arbeitsfunktionen. */
+  .wrap{padding:4px 10px 86px!important}
+  .cockpit-header{grid-template-columns:38px 64px 1fr!important;gap:7px!important;padding:1px 0 5px!important}
+  .menu-btn{width:36px!important;height:36px!important;font-size:27px!important}
+  .app-logo{width:64px!important;height:64px!important;border-radius:14px!important}
+  .app-title h1{font-size:26px!important;line-height:1!important;margin:0!important;letter-spacing:.2px!important}
+  .app-title .sub{display:none!important}
+
+  /* Die vier Hauptaktionen als 2x2-Touchfeld. */
+  .fahrt-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important;justify-items:center!important}
+  .fahrt-btn{width:108px!important;min-width:108px!important;min-height:108px!important;height:108px!important;font-size:24px!important;padding:8px!important}
+  .fahrt-btn span{font-size:10px!important;max-width:82px!important}
+
+  /* Heutige Dokumentation früher und kompakter. */
+  #home>.card:has(>#today){margin-top:9px!important}
+  #home>.card:has(>#today) h2{font-size:21px!important;margin:2px 0 9px!important}
+  .today-event{font-size:13px!important;line-height:1.22!important;margin:5px 0!important;padding-right:36px!important}
+  .today-date{display:none!important}
+  .today-time{font-weight:700!important;color:#b9d7ea!important}
+
+  /* Schnellhilfen bleiben große, eindeutig treffbare Flächen. */
+  .quick-help-btn{min-height:58px!important}
+}
+</style>
+
 </head><body>
 <style>
 @media (max-width: 600px) {
@@ -833,6 +861,8 @@ input::placeholder{color:#6f8798}
     <button class="quick-help-btn" onclick="recordShiftCancellation()">❌ <span><b>Schichtausfall</b><small>Geplante Schicht als Ausfallschicht im Monatsbericht dokumentieren</small></span><b>›</b></button>
   </div>
 
+  <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div>
+
   <div class="section-label section-line">🛠️ BETRIEBLICHE SCHNELLHILFEN <span></span></div>
   <div class="card quick-help-card">
     <button class="quick-help-btn nothalt-help" onclick="showNothaltHelp()">🚨 <span><b>Nothaltauftrag</b><small>Schneller Abruf des Wortlauts</small></span><b>›</b></button>
@@ -843,8 +873,6 @@ input::placeholder{color:#6f8798}
   <div class="card quick-help-card">
     <button class="bahn-km-navi-btn" onclick="window.location.href='./Bahn-km-Navi.html'">🚆 <span><b>Bahn-km Navi</b><small>Bahnstrecke &amp; Kilometer suchen · Karte · GPS · Navigation</small></span><b>›</b></button>
   </div>
-
-  <div class="card"><h2>Heute</h2><div id="today" class="muted">Noch keine Erfassung.</div></div>
 
   <div class="card settings cockpit-settings">
     <div class="report-button-grid">
@@ -2031,14 +2059,14 @@ function openConstructionReport(){
 }
 
 function openMonthlyReport(){
-  window.location.href='./Meine-Schicht-Monatsbericht.html?source=dev';
+  window.location.href='./Meine-Schicht-Monatsbericht-mit-Schichtausfall.html?source=dev';
 }
 
 function render(){
   document.getElementById('kw').textContent=kw();
   updateCockpitStatus();
   document.getElementById('today').innerHTML=getShiftEvents().length
-    ? getShiftEvents().slice().reverse().map(x=>`<div style="position:relative;padding-right:42px;margin:2px 0">${esc(x.date)} ${esc(x.time)} – ${esc(x.type)}${x.role?' – '+esc(x.role):''}${x.id!=null?`<button onclick="deleteEvent(${Number(x.id)})" title="Diesen Eintrag löschen" style="position:absolute;right:0;top:-4px;padding:2px 6px;border-radius:8px;background:#3a1114;border:1px solid #ff4a45;color:#ffb8bd;font-size:12px">🗑️</button>`:''}</div>`).join('')
+    ? getShiftEvents().slice().reverse().map(x=>`<div class="today-event" style="position:relative;padding-right:42px;margin:2px 0"><span class="today-date">${esc(x.date)} </span><span class="today-time">${esc(x.time)}</span> – ${esc(x.type)}${x.role?' – '+esc(x.role):''}${x.id!=null?`<button onclick="deleteEvent(${Number(x.id)})" title="Diesen Eintrag löschen" style="position:absolute;right:0;top:-4px;padding:2px 6px;border-radius:8px;background:#3a1114;border:1px solid #ff4a45;color:#ffb8bd;font-size:12px">🗑️</button>`:''}</div>`).join('')
     : 'Noch keine Erfassung.';
   renderEvents();
 }
