@@ -825,17 +825,8 @@ input::placeholder{color:#6f8798}
     <button class="small cockpit-home-btn private-fahrt-btn" onclick="privateFahrtStart()">🚗 <span>PRIVATE FAHRT</span><b>›</b></button>
   </div>
 
-  <button class="doc-toggle home-doc-toggle" onclick="toggleHomeDocumentation()">📝 <span>Dokumentation erfassen</span><b id="homeDocChevron">›</b></button>
-  <div id="homeDocumentationPanel" class="doc-panel" style="display:none">
-    <div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div>
-    <div class="section-label">AUFGABENBEREICHE</div>
-    <div class="card role-card"><div class="grid role-grid">
-      <button class="role az" onclick="openRole('RbBau')">🚂<br><span>RbBau</span></button>
-      <button class="role sak" onclick="openRole('SAKRA')">🦺<br><span>SAKRA</span></button>
-      <button class="role buep" onclick="openRole('BüP')">🚧<br><span>BüP</span></button>
-      <button class="role sipo" onclick="openRole('Sipo')">🦺<br><span>Sipo</span></button>
-    </div></div>
-  </div>
+  <button class="doc-toggle home-doc-toggle" onclick="openRetroDocumentation()">📝 <span>Dokumentation nachträglich</span><b>›</b></button>
+  <div class="doc-hint" style="margin-top:8px">🕒 Dokumentation wird ausschließlich nachträglich erfasst. Datum und Uhrzeit des tatsächlichen Ereignisses können frei gewählt werden.</div>
 
   <div class="section-label section-line">🛠️ BETRIEBLICHE SCHNELLHILFEN <span></span></div>
   <div class="card quick-help-card">
@@ -922,7 +913,19 @@ function now(){let d=new Date();return{date:`${pad(d.getDate())}.${pad(d.getMont
 function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function kw(){let d=new Date(Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate()));let day=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-day);let y=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-y)/86400000)+1)/7)}
 function show(id){['home','plan','role','settings'].forEach(x=>document.getElementById(x).classList.add('hidden'));document.getElementById(id).classList.remove('hidden');if(id==='plan')renderPlans();if(id==='settings')loadSettings();render()}
-function toggleHomeDocumentation(){homeDocumentationOpen=!homeDocumentationOpen;const p=document.getElementById('homeDocumentationPanel');const c=document.getElementById('homeDocChevron');if(p)p.style.display=homeDocumentationOpen?'block':'none';if(c)c.textContent=homeDocumentationOpen?'⌃':'›';}
+async function openRetroDocumentation(){
+  if(['RbBau','SAKRA','BüP','Sipo'].includes(role)) return addRetroactive();
+  const choice=await chooseOption('📝 Dokumentation nachträglich – Aufgabenbereich:',[
+    {value:'RbBau',label:'🚂 RbBau'},
+    {value:'SAKRA',label:'🦺 SAKRA'},
+    {value:'BüP',label:'🚧 BüP'},
+    {value:'Sipo',label:'🦺 Sipo'}
+  ]);
+  if(choice===null)return;
+  const previousRole=role;
+  role=choice;
+  try{await addRetroactive();}finally{role=previousRole;render();renderRole();}
+}
 const SETTINGS_KEY='personal';
 function getSettings(){return __settings}
 function openSettings(){loadSettings();show('settings')}
@@ -963,6 +966,7 @@ async function addAtTime(type,date,time,extra={}){
   const id=await idbPut(EVENTS_STORE,item);item.id=id;__data.push(item);render();renderRole();
 }
 
+// Alle Dokumentationseinträge werden ausschließlich nachträglich mit Datum/Uhrzeit des tatsächlichen Ereignisses erfasst.
 async function addRetroactive(){
   await devDBReady;
   const n=now();
@@ -1253,10 +1257,8 @@ async function recordEmergency(){
   });
 }
 
-let documentationOpen=false;
-function toggleDocumentation(){documentationOpen=!documentationOpen;renderRole();}
 
-function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div><button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+(documentationOpen?'<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid"><button class="small" onclick="recordSpecial()">📝 Besonderheiten</button><button class="small danger" onclick="recordEmergency()">🚨 Notfall</button></div></div>':'');else {
+function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(role==='Sipo')e.innerHTML='<div class="grid"><button class="green" onclick="add(\'Sipo Schichtbeginn\')">▶️ Beginn</button><button class="red" onclick="add(\'Sipo Schichtende\')">🛑 Ende</button></div><button class="doc-toggle" onclick="addRetroactive()">📝 <span>Dokumentation nachträglich</span><b>›</b></button>';else if(role==='SAKRA')e.innerHTML='<div class="grid"><button class="small" onclick="add(\'Sperrgespräch geführt\')">🗣️ Sperrgespräch</button><button class="small" onclick="detail(\'Sperrung erhalten\',\'Gleis / Streckenabschnitt\')">🔒 Sperrung erhalten</button><button class="small" onclick="add(\'Sperrung aufgehoben\')">🔓 Sperrung aufgehoben</button><button class="small" onclick="detail(\'Sperrung nicht erhalten\',\'Grund\')">❌ Nicht erhalten</button></div><button class="doc-toggle" onclick="addRetroactive()">📝 <span>Dokumentation nachträglich</span><b>›</b></button>';else if(role==='BüP')e.innerHTML='<div class="grid"><button class="small" onclick="buepZugmeldung()">📞 Zugmeldung</button><button class="small" onclick="add(\'Sicherungsmaßnahme durchgeführt\')">🛑 Sicherung</button><button class="small" onclick="add(\'Zug vorbeigefahren\')">🚆 Zug vorbei</button><button class="small" onclick="add(\'Sicherungsmaßnahme aufgehoben\')">✅ Aufgehoben</button></div><button class="doc-toggle" onclick="addRetroactive()">📝 <span>Dokumentation nachträglich</span><b>›</b></button>';else {
  let active=getActiveRangier();
  let r;
  if(active){
@@ -1282,13 +1284,8 @@ function renderRole(){let e=document.getElementById('buttons');if(!e)return;if(r
   ? '<button class="small" onclick="nfParkStatus()">🅿️ Nf Abgestellt / Ausgegleist</button>'
   : '<button class="small" onclick="parkVehicle()">🅿️ Wagen / Lok abgestellt</button>')+
  '<button class="small" onclick="secureWagons()">🚂 Wagen gesichert</button>'+
- '<button class="doc-toggle" onclick="toggleDocumentation()">📝 <span>Dokumentation erfassen</span><b>'+ (documentationOpen?'⌃':'›') +'</b></button>'+
- (documentationOpen ? '<div id="documentationPanel" class="doc-panel"><div class="doc-hint">ℹ️ Die elektronische Dokumentation darf die sichere und ordnungsgemäße Durchführung der Arbeit nicht beeinträchtigen. Bei Zeitdruck oder betrieblichen Erfordernissen hat die Arbeit Vorrang. Fehlende Angaben können später nachgetragen werden.</div><button class="small" onclick="addRetroactive()">🕒 Eintrag nachtragen</button><div class="grid">'+
- '<button class="small" onclick="add(\'Störung\')">⚠️ Störung</button>'+
- '<button class="small" onclick="recordSpecial()">📝 Besonderheiten</button>'+
- '<button class="small danger" onclick="recordEmergency()">🚨 Notfall</button>'+
- '<button class="small danger" onclick="recordIncident()">⚠️ Vorfall / Ereignis</button></div></div>' : '')+
- '</div>';
+ '<button class="doc-toggle" onclick="addRetroactive()">📝 <span>Dokumentation nachträglich</span><b>›</b></button>'+
+  '</div>';
  if(active){
    let mode=active.rangierobjekt||'Tfz';
    let info=mode==='Nf'?'Nf':'Tfz · '+(active.fahrart||'');
