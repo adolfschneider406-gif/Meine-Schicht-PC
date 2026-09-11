@@ -1800,8 +1800,8 @@ async function recordShiftCancellation(){
   alert('Schichtausfall wurde für den Monatsbericht dokumentiert.');
 }
 
-function homeArrival(){
- let ziel=chooseOrt('Wo endest du?',true);
+async function homeArrival(){
+ let ziel=await chooseOrt('Wo endest du?',true);
  if(!ziel)return;
  let km=prompt('KM-Endstand bei Tagesabschluss:','');
  if(km===null||!km.trim())return;
