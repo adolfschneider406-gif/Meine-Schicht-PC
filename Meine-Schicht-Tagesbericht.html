@@ -100,7 +100,16 @@ function loadData(){
 function showReport(){
  const selectedDate=document.getElementById('dateSelect').value;
  if(!selectedDate){document.getElementById('reportArea').innerHTML='<div class="empty">Für den Tagesbericht sind noch keine Daten vorhanden.</div>';return;}
- const a=events.filter(x=>x.date===selectedDate);
+ // Bericht immer chronologisch nach der Uhrzeit ausgeben,
+ // unabhängig von der Speicher-/Erfassungsreihenfolge.
+ const a=events.filter(x=>x.date===selectedDate).slice().sort((x,y)=>{
+  const toSeconds=v=>{
+   const p=String(v||'').split(':').map(Number);
+   if(!Number.isFinite(p[0])) return Number.MAX_SAFE_INTEGER;
+   return (p[0]||0)*3600+(p[1]||0)*60+(p[2]||0);
+  };
+  return toSeconds(x.time)-toSeconds(y.time);
+ });
  if(!a.length){document.getElementById('reportArea').innerHTML='<div class="empty">Für diesen Tag sind keine Daten vorhanden.</div>';return;}
  const plan=plans.find(p=>p.date===selectedDate)||{};
  const rows=a.map(x=>{
