@@ -3,18 +3,20 @@
   "short_name": "Meine Schicht",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#f2f4f7",
+  "background_color": "#020a12",
   "theme_color": "#1f4e78",
   "icons": [
     {
-      "src": "./meine-schicht-icon-neon-192.png",
+      "src": "./meine-schicht-icon-maskable-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "./meine-schicht-icon-neon-512.png",
+      "src": "./meine-schicht-icon-maskable-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
