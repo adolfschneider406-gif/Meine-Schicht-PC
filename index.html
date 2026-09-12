@@ -827,11 +827,6 @@ input::placeholder{color:#6f8798}
 @media(prefers-reduced-motion:reduce){.startup-content,.startup-logo{animation:none!important}}
 </style></head><body><div id="startupSplash" aria-label="Willkommen bei Meine Schicht">
 <div class="startup-content"><img class="startup-logo" src="meine-schicht-icon-192.png" alt="Meine Schicht"><div class="startup-title">MEINE SCHICHT</div><div class="startup-sub">WILLKOMMEN</div>
-<button id="startupSoundTest"
-  style="margin-top:10px;padding:12px 18px;border-radius:14px;border:1px solid #1f8fca;
-  background:#082239;color:#bfe8ff;font-weight:800;font-size:15px;">
-  🔊 Sound testen
-</button>
 </div></div>
 <audio id="startupWelcomeAudio" preload="auto" playsinline><source src="./Willkommen.mp3" type="audio/mpeg"></audio>
 <script>(function(){const splash=document.getElementById('startupSplash'),audio=document.getElementById('startupWelcomeAudio');let started=false,closed=false;
@@ -2119,25 +2114,4 @@ function render(){
 }
 devDBReady.then(()=>{render();renderRole();});
 </script><script>if('serviceWorker'in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{});</script>
-<script id="startup-sound-test">
-(function(){
-  function initSoundTest(){
-    var btn=document.getElementById('startupSoundTest');
-    var audio=document.getElementById('startupWelcomeAudio');
-    if(!btn || !audio) return;
-    btn.addEventListener('click', function(e){
-      e.stopPropagation();
-      audio.currentTime=0;
-      var p=audio.play();
-      if(p && typeof p.catch==='function'){
-        p.catch(function(err){
-          alert('Der Sound konnte auch beim direkten Test nicht abgespielt werden.\n\nFehler: '+(err && err.name ? err.name : 'unbekannt'));
-        });
-      }
-    });
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initSoundTest);
-  else initSoundTest();
-})();
-</script>
 </body></html>
