@@ -829,7 +829,10 @@ input::placeholder{color:#6f8798}
 <div class="startup-content"><img class="startup-logo" src="meine-schicht-icon-192.png" alt="Meine Schicht"><div class="startup-title">MEINE SCHICHT</div><div class="startup-sub">WILLKOMMEN</div>
 </div></div>
 <audio id="startupWelcomeAudio" preload="auto" playsinline><source src="./Willkommen-NeonHerz-7s.mp3" type="audio/mpeg"></audio>
-<script>(function(){const splash=document.getElementById('startupSplash'),audio=document.getElementById('startupWelcomeAudio');let started=false,closed=false;
+<script>(function(){const splash=document.getElementById('startupSplash'),audio=document.getElementById('startupWelcomeAudio');
+const skipWelcome=sessionStorage.getItem('skipStartupWelcome')==='1';
+if(skipWelcome){sessionStorage.removeItem('skipStartupWelcome');splash.remove();return;}
+let started=false,closed=false;
 function startAudio(){if(started)return;try{audio.currentTime=0;const p=audio.play();if(p&&p.catch)p.catch(()=>{});started=true}catch(e){}}
 function closeSplash(){if(closed)return;closed=true;splash.classList.add('hide');setTimeout(()=>splash.remove(),500)}
 window.addEventListener('load',()=>{startAudio();setTimeout(closeSplash,8200)},{once:true});
@@ -1872,6 +1875,7 @@ function dailyKmTotal(events){
  return total;
 }
 function openDailyReport(){
+  sessionStorage.setItem('skipStartupWelcome','1');
   window.location.href='./Meine-Schicht-Tagesbericht.html';
 }
 async function clearData(){
@@ -2093,10 +2097,12 @@ function updateCockpitStatus(){
 }
 
 function openConstructionReport(){
+  sessionStorage.setItem('skipStartupWelcome','1');
   window.location.href='./Meine-Schicht-Bautagesbericht.html';
 }
 
 function openMonthlyReport(){
+  sessionStorage.setItem('skipStartupWelcome','1');
   window.location.href='./Meine-Schicht-Monatsbericht.html?source=dev';
 }
 
