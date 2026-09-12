@@ -243,7 +243,7 @@ function buildReportRows(){
     const pause=pauseForHours(arbeitszeit);
 
     const privateKm=ev
-      .filter(x=>x.type==='Private Fahrt mit Firmen-KFZ')
+      .filter(x=>x.type==='Privatfahrt' || x.type==='Private Fahrt mit Firmen-KFZ')
       .reduce((s,x)=>s+(kmNumber(x.privateKm)||0),0);
 
     // Monatsbericht: Gesamtfahrleistung minus private Firmen-Kfz-Kilometer
