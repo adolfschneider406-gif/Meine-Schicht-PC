@@ -197,13 +197,7 @@ function dailyKmForDate(date,g){
 function plannedForDate(date,g){
   const all=get();
   const plans=all.filter(x=>x.kind==='plan' && x.date===date);
-  const ev=g[date]||[];
-  const absence=ev.find(x=>x.type==='Schichtausfall' && x.planId!=null);
-  if(absence){
-    const byId=plans.find(x=>String(x.id)===String(absence.planId));
-    if(byId)return byId;
-  }
-  const role=ev.find(x=>x.role)?.role||'';
+  const role=(g[date]||[]).find(x=>x.role)?.role||'';
   return plans.find(x=>x.role===role)||plans[0]||null;
 }
 function buildReportRows(){
@@ -211,13 +205,8 @@ function buildReportRows(){
   const rows=[];
   let realDayCount=0;
 
-  const all=get();
-  const plannedDates=all.filter(x=>x.kind==='plan').map(x=>x.date);
-  const eventDates=Object.keys(g);
-
   for(let day=1;day<=31;day++){
-    const date=eventDates.find(d=>Number(String(d).slice(0,2))===day) ||
-      plannedDates.find(d=>Number(String(d).slice(0,2))===day && (g[d]||[]).some(x=>x.type==='Schichtausfall'));
+    const date=Object.keys(g).find(d=>Number(String(d).slice(0,2))===day);
     const ev=date?(g[date]||[]):[];
     if(ev.length) realDayCount++;
 
@@ -228,23 +217,15 @@ function buildReportRows(){
     const shiftEnd=ev.find(x=>x.type==='Schichtende');
     const plan=plannedForDate(date,g);
 
-    const ausfall=ev.some(x=>x.type==='Schichtausfall' || x.ausfallschicht===true);
-    const wohnort=ausfall ? '' : (dep?.start||'');
-    let baustelle=ausfall ? '' : (plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'');
-    const isOfficeTrip=!ausfall && String(plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'').trim().toLowerCase()==='büro';
-    // Bei einer Bürofahrt soll in Spalte C der tatsächliche Büro-Ort stehen.
-    if(isOfficeTrip){
-      const employer=String(__settings?.employer||'');
-      const m=employer.match(/\b\d{5}\s+([^,]+?)\s*$/);
-      baustelle=m ? m[1].trim() : '';
-    }
+    const wohnort=dep?.start||'';
+    const baustelle=plan?.ort||arrival?.ort||dayEnd?.zielart||dayEnd?.ort||'';
     const reiseVon=dep?.time||'';
     const reiseBis=(dayEnd?.time||arrival?.time||'');
-    const reisezeit=(ausfall||isOfficeTrip) ? (ausfall ? 'Ausfallschicht' : '') : (reiseVon&&reiseBis
+    const reisezeit=reiseVon&&reiseBis
       ? String(reiseVon).slice(0,5)+'–'+String(reiseBis).slice(0,5)
-      : '');
-    const ausserHaus=(ausfall||isOfficeTrip) ? '' : durationHours(reiseVon,reiseBis);
-    const kmDay=ausfall ? 0 : (date?dailyKmForDate(date,g):0);
+      : '';
+    const ausserHaus=durationHours(reiseVon,reiseBis);
+    const kmDay=date?dailyKmForDate(date,g):0;
 
     // Monatsbericht: Arbeitszeit immer aus dem geplanten Einsatz übernehmen.
     // Die tatsächlich dokumentierten Schichtzeiten bleiben ausschließlich in den Tagesdaten/Bautagesberichten.
@@ -265,18 +246,31 @@ function buildReportRows(){
       .filter(x=>x.type==='Private Fahrt mit Firmen-KFZ')
       .reduce((s,x)=>s+(kmNumber(x.privateKm)||0),0);
 
-    const actual=(arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0)));
+    // Monatsbericht: Gesamtfahrleistung minus private Firmen-Kfz-Kilometer
+    // ergibt die dienstlichen Kilometer für Spalte G.
+    const dienstlicheKm=Math.max(0,(Number(kmDay)||0)-privateKm);
+
+    const actual=arbeitszeit==null?'':Math.max(0,arbeitszeit-(Number(pause)||0));
     const auftrag=plan?.auftraggeber||ev.find(x=>x.auftraggeber)?.auftraggeber||'';
 
-    // Spalte L: Auftraggeber ODER Baustelle, nicht beides zusammen.
-    // Eine Bürofahrt wird nicht in Spalte L geführt.
+    // Bürofahrt:
+    // C "zur Baustelle" soll den tatsächlichen Büro-Ort enthalten.
+    // L "Auftraggeber oder Baustelle" soll dafür schlicht "Büro" enthalten.
+    // Bei normalen Einsätzen bleibt C der Einsatzort und L der Auftraggeber.
+    const employer=String(__settings?.employer||'');
+    const officeMatch=employer.match(/\b\d{5}\s+([^,]+?)\s*$/);
+    const officeOrt=officeMatch ? officeMatch[1].trim() : '';
+
+    const istBuerofahrt=String(baustelle||'').trim().toLowerCase()==='büro';
+    const reportBaustelle=istBuerofahrt ? (officeOrt||baustelle) : baustelle;
+
     let auftragBaustelle='';
-    if(!isOfficeTrip){
-      if(auftrag){
-        auftragBaustelle=auftrag;
-      }else if(baustelle){
-        auftragBaustelle=baustelle;
-      }
+    if(auftrag){
+      auftragBaustelle=auftrag;
+    }else if(istBuerofahrt){
+      auftragBaustelle='Büro';
+    }else{
+      auftragBaustelle=baustelle;
     }
 
     if(!ev.length){
@@ -287,13 +281,13 @@ function buildReportRows(){
     rows.push([
       day,                         // A Tag
       wohnort,                     // B von Wohnort
-      baustelle,                   // C zur Baustelle
+      reportBaustelle,             // C zur Baustelle
       reisezeit,                   // D Reisezeit von–bis
-      ausserHaus===''||ausserHaus===''||ausserHaus==null?'':Number(ausserHaus.toFixed(2)), // E Zeit außer Haus
+      ausserHaus==null?'':Number(ausserHaus.toFixed(2)), // E Zeit außer Haus
       plan?.plate||plan?.kennzeichen||'',                // F
-      kmDay||0,                    // G Tages-km
-      '',                          // H Privat-Kfz
-      privateKm||'',               // I private km mit Firmen-Kfz
+      dienstlicheKm,               // G dienstliche km
+      '',                           // H Privat-Kfz
+      privateKm||'',                // I private km mit Firmen-Kfz
       '',                          // J Übernachtung
       ev.find(x=>x.role)?.role||plan?.role||'',           // K
       auftragBaustelle,            // L
